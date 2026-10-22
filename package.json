@@ -1,0 +1,25 @@
+{
+  "name": "athar-groq-ai",
+  "version": "1.0.0",
+  "description": "Athar Smart Lost and Found with Groq AI",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "setup": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "dev:all": "npm run dev",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:setup": "cd server && npm run db:push && npm run seed"
+  },
+  "keywords": [
+    "lost-and-found",
+    "management-system"
+  ],
+  "author": "Athar Bilingual Tech",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

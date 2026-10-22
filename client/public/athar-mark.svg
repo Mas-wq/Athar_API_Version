@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 112" role="img" aria-label="Athar">
+  <defs>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="10" y1="6" x2="100" y2="108">
+      <stop offset="0" stop-color="#1fe0b0"/>
+      <stop offset="0.55" stop-color="#20b4ee"/>
+      <stop offset="1" stop-color="#2f6df0"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#g)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 90C32 74 15 62 15 44a35 35 0 0 1 56-28" stroke-width="10"/>
+    <path d="M60 10a35 35 0 0 1 25 34c0 18-17 30-35 46" stroke-width="10"/>
+    <path d="M66 3a47 47 0 0 1 34 41" stroke-width="7"/>
+  </g>
+  <circle cx="50" cy="44" r="10" fill="url(#g)"/>
+  <path fill="url(#g)" d="M12 106l19-32 12 9-13 23z"/>
+  <path fill="url(#g)" d="M88 106L69 74l-12 9 13 23z"/>
+</svg>

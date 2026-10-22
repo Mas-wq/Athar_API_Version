@@ -1,0 +1,474 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss";
+
+/*
+  Athar design tokens
+  -------------------
+  The app is written with Tailwind's `slate-*` and `emerald-*` utilities.
+  Rather than touching every page, the palette below re-tunes those scales to
+  the Athar brand (teal -> cyan -> blue, taken from the logo symbol), so every
+  existing screen picks up the new look without any logic changes.
+
+  slate   -> cool, slightly teal-tinted neutrals (dark surfaces)
+  emerald -> the green-teal end of the logo gradient (primary accent)
+  teal    -> the cyan-blue end of the logo gradient (secondary accent)
+*/
+@theme {
+  /* Typography: Latin + Arabic families share the same stack so mixed text stays balanced */
+  --font-sans: "Geist", "IBM Plex Sans Arabic", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Neutrals */
+  --color-slate-50: #f4f7f8;
+  --color-slate-100: #e8eef0;
+  --color-slate-200: #d3dde1;
+  --color-slate-300: #b3c1c8;
+  --color-slate-400: #8a9aa3;
+  --color-slate-500: #66767f;
+  --color-slate-600: #4a5961;
+  --color-slate-700: #323e45;
+  --color-slate-800: #1f292f;
+  --color-slate-900: #121a1f;
+  --color-slate-950: #0a0f13;
+
+  /* Primary accent (logo green-teal) */
+  --color-emerald-50: #edfdf9;
+  --color-emerald-100: #cff9ee;
+  --color-emerald-200: #a2f1de;
+  --color-emerald-300: #6fe5cd;
+  --color-emerald-400: #3fd6bd;
+  --color-emerald-500: #1fbfae;
+  --color-emerald-600: #0a8087;
+  --color-emerald-700: #0a6770;
+  --color-emerald-800: #0c525a;
+  --color-emerald-900: #0d4349;
+  --color-emerald-950: #05262b;
+
+  /* Secondary accent (logo cyan-blue) */
+  --color-teal-50: #eef8ff;
+  --color-teal-100: #d8eeff;
+  --color-teal-200: #b4deff;
+  --color-teal-300: #7cc6fb;
+  --color-teal-400: #45aaf3;
+  --color-teal-500: #2b8cea;
+  --color-teal-600: #2170d4;
+  --color-teal-700: #1f5aac;
+  --color-teal-800: #1f4b89;
+  --color-teal-900: #1e406f;
+  --color-teal-950: #142947;
+
+  /* cyan and blue are folded into the same secondary ramp so stray uses stay on-brand */
+  --color-cyan-300: #7cc6fb;
+  --color-cyan-400: #45aaf3;
+  --color-cyan-500: #2b8cea;
+  --color-cyan-950: #142947;
+  --color-blue-400: #45aaf3;
+  --color-blue-500: #2b8cea;
+  --color-blue-600: #2170d4;
+
+  --color-primary-50: #edfdf9;
+  --color-primary-100: #cff9ee;
+  --color-primary-200: #a2f1de;
+  --color-primary-300: #6fe5cd;
+  --color-primary-400: #3fd6bd;
+  --color-primary-500: #1fbfae;
+  --color-primary-600: #0a8087;
+  --color-primary-700: #0a6770;
+  --color-primary-800: #0c525a;
+  --color-primary-900: #0d4349;
+
+  /* Semantic status colours: slightly softened so they sit on the dark surfaces */
+  --color-success: #3fd6bd;
+  --color-warning: #f2b544;
+  --color-danger: #f0687a;
+
+  --color-rose-400: #f58a99;
+  --color-rose-500: #ec5c70;
+  --color-rose-600: #d63f56;
+  --color-red-400: #f58a99;
+  --color-red-500: #ec5c70;
+  --color-red-600: #d63f56;
+  --color-amber-300: #f7cf7d;
+  --color-amber-400: #f2b544;
+  --color-amber-500: #e89d1c;
+
+  /* Radii follow a 3-step scale: controls, surfaces, hero panels */
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  /* Elevation */
+  --shadow-2xl: 0 24px 60px -24px rgb(0 0 0 / 0.65), 0 2px 0 0 rgb(255 255 255 / 0.03) inset;
+  --shadow-xl: 0 18px 44px -22px rgb(0 0 0 / 0.6);
+  --shadow-lg: 0 12px 32px -18px rgb(0 0 0 / 0.55);
+
+  --ease-athar: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  color-scheme: dark;
+
+  --page: #0a0f13;
+  --surface: rgb(18 26 31 / 0.62);
+  --surface-solid: #101920;
+  --surface-raised: rgb(255 255 255 / 0.04);
+  --border-weak: rgb(255 255 255 / 0.07);
+  --border-medium: rgb(255 255 255 / 0.12);
+  --text-strong: #f4f7f8;
+  --text-muted: #8a9aa3;
+  --brand-a: #1fd9b0;
+  --brand-b: #20b4ee;
+  --brand-c: #2f6df0;
+  --brand-gradient: linear-gradient(135deg, var(--brand-a), var(--brand-b) 55%, var(--brand-c));
+  --ring: 0 0 0 3px rgb(63 214 189 / 0.35);
+  --dur-fast: 140ms;
+  --dur-base: 260ms;
+}
+
+/* Light palette: Tailwind's slate surfaces are remapped at the document root,
+   while the explicit text utilities below receive accessible foregrounds. */
+html[data-theme="light"] {
+  color-scheme: light;
+  --page: #f3f7f5;
+  --surface: rgb(255 255 255 / 0.78);
+  --surface-solid: #ffffff;
+  --surface-raised: rgb(16 55 40 / 0.035);
+  --border-weak: rgb(18 61 43 / 0.10);
+  --border-medium: rgb(18 61 43 / 0.16);
+  --text-strong: #15271f;
+  --text-muted: #65766d;
+  --ring: 0 0 0 3px rgb(8 134 110 / 0.22);
+  --shadow-2xl: 0 24px 60px -24px rgb(12 49 35 / 0.16), 0 2px 0 0 rgb(255 255 255 / 0.8) inset;
+  --shadow-xl: 0 18px 44px -22px rgb(12 49 35 / 0.16);
+  --shadow-lg: 0 12px 32px -18px rgb(12 49 35 / 0.14);
+
+  --color-slate-700: #dbe5df;
+  --color-slate-800: #e8efeb;
+  --color-slate-900: #f3f7f5;
+  --color-slate-950: #fbfdfc;
+
+  --color-emerald-300: #0a8068;
+  --color-emerald-400: #45c9a9;
+  --color-emerald-500: #16a986;
+  --color-emerald-600: #08775f;
+  --color-emerald-700: #08634f;
+  --color-emerald-800: #0b5144;
+  --color-emerald-900: #0a4037;
+  --color-emerald-950: #082f29;
+
+  --color-teal-300: #1879aa;
+  --color-teal-400: #1679a7;
+  --color-teal-500: #176e9d;
+  --color-teal-600: #155c83;
+  --color-blue-400: #1976a8;
+  --color-blue-500: #176e9d;
+  --color-blue-600: #155c83;
+
+  --color-primary-300: #0a8068;
+  --color-primary-400: #0a8068;
+  --color-primary-500: #08775f;
+  --color-primary-600: #07634f;
+  --color-primary-700: #075441;
+  --color-primary-800: #0b4538;
+  --color-primary-900: #0a3a31;
+
+  --color-rose-400: #bf4255;
+  --color-rose-500: #b63249;
+  --color-rose-600: #9f2c42;
+  --color-red-400: #bf4255;
+  --color-red-500: #b63249;
+  --color-red-600: #9f2c42;
+  --color-amber-300: #805600;
+  --color-amber-400: #835900;
+  --color-amber-500: #936000;
+}
+
+/* ---------- Base ---------- */
+html {
+  scroll-behavior: smooth;
+  background: var(--page);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--page);
+  color: var(--text-strong);
+  letter-spacing: -0.005em;
+  min-height: 100vh;
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+}
+
+/* Arabic needs a touch more line height and no negative tracking */
+:lang(ar),
+[dir="rtl"],
+[dir="auto"]:lang(ar) {
+  letter-spacing: 0;
+  line-height: 1.7;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: rgb(63 214 189 / 0.3);
+  color: #fff;
+}
+
+/* Visible keyboard focus everywhere, without showing on mouse clicks */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 0.5rem;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-radius: inherit;
+}
+
+/* Form controls: one consistent look, whatever the page sets */
+input,
+textarea,
+select {
+  transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+select option {
+  background: #101920;
+  color: #f4f7f8;
+}
+
+html[data-theme="light"] select option {
+  background: #ffffff;
+  color: #15271f;
+}
+
+html[data-theme="light"] ::selection {
+  background: rgb(8 134 110 / 0.2);
+  color: #15271f;
+}
+
+html[data-theme="light"] .text-white,
+html[data-theme="light"] .hover\:text-white:hover {
+  color: var(--text-strong) !important;
+}
+html[data-theme="light"] .text-slate-50,
+html[data-theme="light"] .text-slate-100 { color: #263a31 !important; }
+html[data-theme="light"] .text-slate-200 { color: #354940 !important; }
+html[data-theme="light"] .text-slate-300 { color: #50645a !important; }
+html[data-theme="light"] .text-slate-400 { color: #65766d !important; }
+html[data-theme="light"] .text-slate-500 { color: #718178 !important; }
+html[data-theme="light"] .text-slate-600 { color: #566960 !important; }
+html[data-theme="light"] .text-slate-700 { color: #3b5147 !important; }
+html[data-theme="light"] .text-slate-800,
+html[data-theme="light"] .text-slate-900,
+html[data-theme="light"] .text-slate-950 { color: #15271f !important; }
+html[data-theme="light"] .text-emerald-200,
+html[data-theme="light"] .text-emerald-300,
+html[data-theme="light"] .text-emerald-400 { color: #087b63 !important; }
+html[data-theme="light"] .text-emerald-50,
+html[data-theme="light"] .text-emerald-100 { color: #087b63 !important; }
+html[data-theme="light"] .text-teal-200,
+html[data-theme="light"] .text-teal-300,
+html[data-theme="light"] .text-teal-400,
+html[data-theme="light"] .text-blue-400 { color: #176a95 !important; }
+html[data-theme="light"] .text-rose-400,
+html[data-theme="light"] .text-rose-500,
+html[data-theme="light"] .text-red-400,
+html[data-theme="light"] .text-red-500 { color: #ad3047 !important; }
+html[data-theme="light"] .text-amber-300,
+html[data-theme="light"] .text-amber-400 { color: #805600 !important; }
+
+html[data-theme="light"] [class*="bg-white/"] {
+  background-color: var(--surface-raised) !important;
+}
+html[data-theme="light"] [class*="border-white"] {
+  border-color: var(--border-medium) !important;
+}
+html[data-theme="light"] [class*="bg-emerald-"].text-white,
+html[data-theme="light"] [class*="bg-emerald-"] .text-white,
+html[data-theme="light"] [class*="bg-teal-"].text-white,
+html[data-theme="light"] [class*="bg-teal-"] .text-white,
+html[data-theme="light"] [class*="bg-blue-"].text-white,
+html[data-theme="light"] [class*="bg-blue-"] .text-white,
+html[data-theme="light"] [class*="bg-rose-"].text-white,
+html[data-theme="light"] [class*="bg-rose-"] .text-white,
+html[data-theme="light"] [class*="bg-red-"].text-white,
+html[data-theme="light"] [class*="bg-red-"] .text-white,
+html[data-theme="light"] [class*="bg-primary-"].text-white,
+html[data-theme="light"] [class*="bg-primary-"] .text-white,
+html[data-theme="light"] [class*="from-emerald-"].text-white,
+html[data-theme="light"] [class*="from-emerald-"] .text-white {
+  color: #ffffff !important;
+}
+
+/* ---------- Backdrop (dot field, like the reference) ---------- */
+.athar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 28rem at 50% -8%, rgb(32 180 238 / 0.14), transparent 70%),
+    radial-gradient(38rem 24rem at 8% 12%, rgb(31 217 176 / 0.08), transparent 70%),
+    var(--page);
+}
+.athar-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(255 255 255 / 0.16) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 0%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 0%, transparent 100%);
+  opacity: 0.55;
+}
+html[data-theme="light"] .athar-backdrop::after {
+  background-image: radial-gradient(rgb(21 70 50 / 0.13) 1px, transparent 1.4px);
+  opacity: 0.4;
+}
+
+/* Reveal page content like the portfolio reference while keeping navigation visible. */
+.athar-page-reveal {
+  animation: athar-page-reveal 1.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes athar-page-reveal {
+  from { opacity: 0; filter: blur(12px); }
+  68% { opacity: 1; filter: blur(2px); }
+  to { opacity: 1; filter: none; }
+}
+
+/* ---------- Surfaces ---------- */
+.surface {
+  background: var(--surface);
+  border: 1px solid var(--border-weak);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--shadow-xl);
+}
+.surface-solid {
+  background: var(--surface-solid);
+  border: 1px solid var(--border-weak);
+}
+.brand-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Soft top-of-page fade so content scrolls under the floating nav cleanly */
+.nav-mask {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 6.5rem;
+  z-index: 40;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--page) 20%, transparent);
+  mask-image: linear-gradient(#000 35%, transparent);
+  -webkit-mask-image: linear-gradient(#000 35%, transparent);
+}
+
+/* ---------- Existing helpers kept for compatibility ---------- */
+.card-hover {
+  transition: transform var(--dur-base) var(--ease-athar), box-shadow var(--dur-base) var(--ease-athar),
+    border-color var(--dur-base) ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* ---------- Scrollbar ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #323e45 transparent;
+}
+html[data-theme="light"] * {
+  scrollbar-color: #b6c7be transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #323e45;
+  border-radius: 999px;
+  border: 2px solid var(--page);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4a5961;
+}
+
+/* ---------- Toasts ---------- */
+.Toastify__toast {
+  border-radius: 1rem !important;
+  border: 1px solid var(--border-medium) !important;
+  background: var(--surface-solid) !important;
+  color: var(--text-strong) !important;
+  backdrop-filter: blur(16px);
+  font-family: var(--font-sans);
+}
+.Toastify__toast-body,
+.athar-toast-body {
+  color: var(--text-strong) !important;
+}
+html[data-theme="light"] .Toastify__toast,
+html[data-theme="light"] .Toastify__toast-theme--dark,
+html[data-theme="light"] .Toastify__toast-theme--light {
+  background: #f1faf6 !important;
+  border-color: #b7dfcd !important;
+  color: #17392e !important;
+  box-shadow: 0 12px 32px rgb(24 68 51 / 16%) !important;
+}
+html[data-theme="light"] .Toastify__toast .Toastify__toast-body,
+html[data-theme="light"] .Toastify__toast .athar-toast-body,
+html[data-theme="light"] .Toastify__toast .Toastify__toast-body * {
+  color: #17392e !important;
+}
+html[data-theme="light"] .Toastify__toast .Toastify__close-button {
+  color: #557267 !important;
+  opacity: 1;
+}
+html[data-theme="light"] .Toastify__toast .Toastify__progress-bar {
+  background: #078263 !important;
+}
+
+/* ---------- Motion preferences ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

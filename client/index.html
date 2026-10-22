@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("athar-theme");
+        if (savedTheme === "light" || savedTheme === "dark") {
+          document.documentElement.dataset.theme = savedTheme;
+        }
+      } catch {
+        // Keep the default theme when browser storage is unavailable.
+      }
+    </script>
+
+    <title>Athar | أثر — Smart Lost &amp; Found</title>
+    <link rel="icon" type="image/svg+xml" href="/athar-mark.svg" />
+    <link rel="alternate icon" type="image/png" href="/athar-favicon.png" />
+    <meta name="theme-color" content="#0a0f13" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
