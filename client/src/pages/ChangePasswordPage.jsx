@@ -113,7 +113,7 @@ const ChangePasswordPage = () => {
 
         <div className="bg-slate-900/70 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative">
           {/* Glow Decor */}
-          <div className="absolute top-0 end-0 w-32 h-32 bg-emerald-500/5 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 end-0 w-32 h-32 bg-emerald-500/5 hidden pointer-events-none" />
 
           <div className="p-10 border-b border-slate-800 bg-slate-900/30">
             <div className="flex items-center gap-4 mb-2">

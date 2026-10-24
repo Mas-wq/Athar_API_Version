@@ -81,13 +81,13 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          {/* Backdrop with blur */}
+          {/* Modal backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-slate-950/40 backdrop-blur-md"
+            className="absolute inset-0 bg-slate-950/40 "
             onClick={onClose}
           />
 
@@ -97,7 +97,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className="relative w-full max-w-5xl grid lg:grid-cols-2 bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-emerald-500/10 overflow-hidden border border-emerald-500/20"
+            className="relative w-full max-w-5xl grid lg:grid-cols-2 bg-slate-900/95  rounded-3xl shadow-2xl shadow-emerald-500/10 overflow-hidden border border-emerald-500/20"
           >
             {/* Animated gradient background */}
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
@@ -137,7 +137,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
                     repeat: 0,
                     ease: "easeInOut",
                   }}
-                  className="absolute top-20 start-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"
+                  className="absolute top-20 start-10 w-32 h-32 bg-emerald-500/10 rounded-full hidden"
                 />
                 <motion.div
                   animate={{
@@ -150,7 +150,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
                     ease: "easeInOut",
                     delay: 1,
                   }}
-                  className="absolute bottom-20 end-10 w-40 h-40 bg-teal-500/10 rounded-full blur-3xl"
+                  className="absolute bottom-20 end-10 w-40 h-40 bg-teal-500/10 rounded-full hidden"
                 />
               </div>
 
@@ -159,7 +159,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
                   whileHover={{ scale: 1.05 }}
                   className="flex items-center gap-2.5 mb-8"
                 >
-                  <AtharLogo height={40} />
+                  <AtharLogo height={46} />
                 </motion.div>
 
                 <motion.h2
@@ -197,7 +197,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-emerald-500/20 hover:bg-white/10 hover:border-emerald-500/40 transition-all cursor-pointer"
+                  className="bg-white/5  p-4 rounded-xl border border-emerald-500/20 hover:bg-white/10 hover:border-emerald-500/40 transition-all cursor-pointer"
                 >
                   <ShieldCheck size={24} className="text-emerald-400 mb-2" />
                   <p className="text-white text-xs font-bold">
@@ -210,7 +210,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-teal-500/20 hover:bg-white/10 hover:border-teal-500/40 transition-all cursor-pointer"
+                  className="bg-white/5  p-4 rounded-xl border border-teal-500/20 hover:bg-white/10 hover:border-teal-500/40 transition-all cursor-pointer"
                 >
                   <Zap size={24} className="text-teal-400 mb-2" />
                   <p className="text-white text-xs font-bold">AI Matching</p>
@@ -221,7 +221,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-cyan-500/20 hover:bg-white/10 hover:border-cyan-500/40 transition-all cursor-pointer"
+                  className="bg-white/5  p-4 rounded-xl border border-cyan-500/20 hover:bg-white/10 hover:border-cyan-500/40 transition-all cursor-pointer"
                 >
                   <MapPin size={24} className="text-cyan-400 mb-2" />
                   <p className="text-white text-xs font-bold">Item Tracking</p>
@@ -230,7 +230,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-amber-500/20 hover:bg-white/10 hover:border-amber-500/40 transition-all cursor-pointer"
+                  className="bg-white/5  p-4 rounded-xl border border-amber-500/20 hover:bg-white/10 hover:border-amber-500/40 transition-all cursor-pointer"
                 >
                   <Users size={24} className="text-amber-400 mb-2" />
                   <p className="text-white text-xs font-bold">Multi-Role</p>
@@ -246,10 +246,10 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}
-              className="p-6 md:p-10 lg:p-12 flex flex-col justify-center bg-slate-900/40 backdrop-blur-sm relative"
+              className="p-6 md:p-10 lg:p-12 flex flex-col justify-center bg-slate-900/40  relative"
             >
               <div className="lg:hidden flex items-center gap-2.5 mb-6 justify-center">
-                <AtharLogo height={34} />
+                <AtharLogo height={40} />
               </div>
 
               <motion.div

@@ -184,6 +184,62 @@ html[data-theme="light"] {
 }
 
 /* ---------- Base ---------- */
+.athar-themed-logo {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  line-height: 0;
+}
+
+.athar-themed-logo__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+html[data-theme="light"] .athar-themed-logo__image--dark,
+html[data-theme="dark"] .athar-themed-logo__image--light {
+  display: none;
+}
+
+.athar-intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--page);
+  animation: athar-intro-fade-in 240ms ease-out both;
+}
+
+.athar-intro-screen--leaving {
+  animation: athar-intro-fade-out 360ms ease-in both;
+}
+
+.athar-intro-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+@keyframes athar-intro-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes athar-intro-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .athar-intro-screen,
+  .athar-intro-screen--leaving {
+    animation-duration: 1ms;
+  }
+}
+
 html {
   scroll-behavior: smooth;
   background: var(--page);
@@ -355,17 +411,14 @@ html[data-theme="light"] .athar-backdrop::after {
   animation: athar-page-reveal 1.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes athar-page-reveal {
-  from { opacity: 0; filter: blur(12px); }
-  68% { opacity: 1; filter: blur(2px); }
-  to { opacity: 1; filter: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ---------- Surfaces ---------- */
 .surface {
   background: var(--surface);
   border: 1px solid var(--border-weak);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
   box-shadow: var(--shadow-xl);
 }
 .surface-solid {
@@ -431,7 +484,6 @@ html[data-theme="light"] * {
   border: 1px solid var(--border-medium) !important;
   background: var(--surface-solid) !important;
   color: var(--text-strong) !important;
-  backdrop-filter: blur(16px);
   font-family: var(--font-sans);
 }
 .Toastify__toast-body,

@@ -111,7 +111,7 @@ const ManageUsersPage = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-transparent px-4">
-        <div className="bg-slate-900/40 backdrop-blur-2xl rounded-3xl p-10 border border-slate-800 max-w-md w-full text-center shadow-2xl">
+        <div className="bg-slate-900/40  rounded-3xl p-10 border border-slate-800 max-w-md w-full text-center shadow-2xl">
           <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-8">
             <Shield size={40} className="text-emerald-500" />
           </div>
@@ -296,7 +296,7 @@ const ManageUsersPage = () => {
 
       {/* Confirmation Vault Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center z-[100] p-4">
+        <div className="fixed inset-0 bg-slate-950/90  flex items-center justify-center z-[100] p-4">
           <div className="bg-slate-900/70 rounded-3xl border border-red-500/20 shadow-[0_0_50px_-12px_rgba(239,68,68,0.3)] max-w-md w-full p-10">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mb-6">

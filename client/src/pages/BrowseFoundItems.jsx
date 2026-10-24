@@ -187,7 +187,7 @@ const StatPill = ({ label, value, color, hideOnMobile }) => {
   };
 
   return (
-    <div className={`${hideOnMobile ? 'hidden sm:flex' : 'flex'} flex-col justify-center min-w-[100px] md:min-w-[140px] px-6 py-4 bg-slate-900/40 backdrop-blur-md border ${colors[color]} rounded-2xl`}>
+    <div className={`${hideOnMobile ? 'hidden sm:flex' : 'flex'} flex-col justify-center min-w-[100px] md:min-w-[140px] px-6 py-4 bg-slate-900/40  border ${colors[color]} rounded-2xl`}>
       <span className="text-[11px] font-semibold opacity-60 mb-1">{label}</span>
       <span className="text-2xl md:text-3xl font-semibold tabular-nums leading-none">{value}</span>
     </div>

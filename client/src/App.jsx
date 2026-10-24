@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router"; // Fixed: use react-router-dom
 import Navbar from "./components/Navbar";
 import LoginModal from "./components/modal/LoginModal";
@@ -31,8 +31,10 @@ import {
   AiAssistantPage,
 } from "./pages/index.js";
 import Footer from "./components/Footer";
+import BrandSplash from "./components/BrandSplash";
 
 const App = () => {
+  const [showBrandSplash, setShowBrandSplash] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const lastNonAuthPathRef = useRef("/");
@@ -65,6 +67,10 @@ const App = () => {
 
   const switchToRegister = () => navigate("/register", { replace: true });
   const switchToLogin = () => navigate("/login", { replace: true });
+
+  if (showBrandSplash) {
+    return <BrandSplash onComplete={() => setShowBrandSplash(false)} />;
+  }
 
   return (
     <div className="relative flex flex-col min-h-screen text-slate-100">

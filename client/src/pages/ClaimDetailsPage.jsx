@@ -116,7 +116,7 @@ const ClaimDetailsPage = () => {
   if (!isAuthenticated || user?.role !== "USER") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
-        <div className="bg-slate-900/70 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+        <div className="bg-slate-900/70  border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
           <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle size={36} className="text-emerald-400" />
           </div>
@@ -148,7 +148,7 @@ const ClaimDetailsPage = () => {
   if (!claim) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
-        <div className="bg-slate-900/70 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+        <div className="bg-slate-900/70  border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
           <h2 className="text-2xl font-bold text-white mb-3">
             Claim not found
           </h2>
@@ -182,7 +182,7 @@ const ClaimDetailsPage = () => {
           <span className="font-medium">Back</span>
         </button>
 
-        <div className="bg-slate-900/70 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8">
+        <div className="bg-slate-900/70  border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">

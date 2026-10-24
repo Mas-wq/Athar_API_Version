@@ -74,7 +74,7 @@ const ItemDetailsModal = ({ itemId, isOpen, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+        className="absolute inset-0 bg-slate-950/80 "
         onClick={onClose}
       />
 
@@ -85,7 +85,7 @@ const ItemDetailsModal = ({ itemId, isOpen, onClose }) => {
         className="relative w-full max-w-5xl max-h-[80vh] bg-slate-900/70 border border-slate-800 rounded-3xl shadow-[0_0_50px_-12px_rgba(16,185,129,0.2)] overflow-hidden flex flex-col"
       >
         {/* Header: Fixed */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-slate-800 bg-slate-900/70/50 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-slate-800 bg-slate-900/70/50 ">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
               <Package size={20} className="text-emerald-400" />

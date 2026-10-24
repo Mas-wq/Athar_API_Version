@@ -85,7 +85,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-slate-950/40 backdrop-blur-md"
+            className="absolute inset-0 bg-slate-950/40 "
             onClick={handleClose}
           />
 
@@ -95,7 +95,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className="relative w-full max-w-2xl bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-emerald-500/10 overflow-hidden border border-emerald-500/20 p-8 md:p-12"
+            className="relative w-full max-w-2xl bg-slate-900/95  rounded-3xl shadow-2xl shadow-emerald-500/10 overflow-hidden border border-emerald-500/20 p-8 md:p-12"
           >
             {/* Close button */}
             <motion.button
@@ -204,7 +204,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-slate-950/40 backdrop-blur-md"
+            className="absolute inset-0 bg-slate-950/40 "
             onClick={handleClose}
           />
 
@@ -214,7 +214,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className="relative w-full max-w-5xl grid lg:grid-cols-2 bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-emerald-500/10 overflow-hidden border border-emerald-500/20"
+            className="relative w-full max-w-5xl grid lg:grid-cols-2 bg-slate-900/95  rounded-3xl shadow-2xl shadow-emerald-500/10 overflow-hidden border border-emerald-500/20"
           >
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
@@ -247,7 +247,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   whileHover={{ scale: 1.05 }}
                   className="flex items-center gap-2.5 mb-8"
                 >
-                  <AtharLogo height={40} />
+                  <AtharLogo height={46} />
                 </motion.div>
 
                 <motion.h2 className="text-3xl lg:text-4xl font-bold text-white leading-tight mb-4">
@@ -297,7 +297,7 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   <motion.div
                     key={idx}
                     whileHover={{ scale: 1.05, y: -2 }}
-                    className={`bg-white/5 backdrop-blur-md p-4 rounded-xl border ${item.border} hover:bg-white/10 transition-all cursor-pointer`}
+                    className={`bg-white/5  p-4 rounded-xl border ${item.border} hover:bg-white/10 transition-all cursor-pointer`}
                   >
                     <item.icon size={24} className={`${item.color} mb-2`} />
                     <p className="text-white text-xs font-bold">{item.label}</p>
@@ -312,10 +312,10 @@ const ForgotPasswordModal = ({ isOpen, onClose, onSwitchToLogin }) => {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}
-              className="p-6 md:p-10 lg:p-12 flex flex-col justify-center bg-slate-900/40 backdrop-blur-sm relative"
+              className="p-6 md:p-10 lg:p-12 flex flex-col justify-center bg-slate-900/40  relative"
             >
               <div className="lg:hidden flex items-center gap-2.5 mb-6 justify-center">
-                <AtharLogo height={34} />
+                <AtharLogo height={40} />
               </div>
 
               <div className="mb-8 text-center lg:text-start">

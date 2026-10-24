@@ -39,7 +39,7 @@ const HomePage = () => {
             initial="hidden"
             animate="show"
             custom={0}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] py-1.5 ps-2 pe-4 backdrop-blur-md mb-7"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] py-1.5 ps-2 pe-4  mb-7"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/15">
               <ShieldCheck size={14} className="text-emerald-300" aria-hidden="true" />

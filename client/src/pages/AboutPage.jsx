@@ -20,8 +20,8 @@ const AboutPage = () => {
     >
       {/* Dynamic Background Accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 end-0 w-[500px] h-[500px] bg-emerald-600/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 start-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full" />
+        <div className="absolute top-0 end-0 w-[500px] h-[500px] bg-emerald-600/10 hidden rounded-full" />
+        <div className="absolute bottom-0 start-0 w-[500px] h-[500px] bg-blue-600/10 hidden rounded-full" />
       </div>
 
       <div className="relative z-10 py-12 lg:py-20">
@@ -30,7 +30,7 @@ const AboutPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-950/50 border border-emerald-500/40 backdrop-blur-md rounded-full mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-950/50 border border-emerald-500/40  rounded-full mb-8"
           >
             <ShieldCheck size={16} className="text-emerald-400" />
             <span className="text-xs font-bold text-emerald-50">
@@ -143,7 +143,7 @@ const AboutPage = () => {
 const SectionCard = ({ icon, title, text, gradient }) => (
   <motion.div
     whileHover={{ y: -5 }}
-    className={`relative p-10 rounded-3xl bg-slate-900/60 border border-slate-800 backdrop-blur-md overflow-hidden group`}
+    className={`relative p-10 rounded-3xl bg-slate-900/60 border border-slate-800  overflow-hidden group`}
   >
     <div
       className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}

@@ -47,6 +47,10 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    const favicon = document.getElementById("athar-theme-favicon");
+    if (favicon) favicon.href = `/branding/logos/athar-mark-${theme}.svg`;
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.content = theme === "light" ? "#f3f7f5" : "#0a0f13";
     try {
       window.localStorage.setItem("athar-theme", theme);
     } catch {
@@ -139,17 +143,17 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
       <header className="fixed top-3 inset-x-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none">
         <nav
           aria-label="Main"
-          className="w-full max-w-7xl rounded-2xl border border-white/10 bg-slate-950/70 backdrop-blur-xl shadow-[0_18px_44px_-22px_rgb(0_0_0/0.7)] pointer-events-auto"
+          className="w-full max-w-7xl rounded-2xl border border-white/10 bg-slate-950/70  shadow-[0_18px_44px_-22px_rgb(0_0_0/0.7)] pointer-events-auto"
         >
           <div className="px-3 sm:px-4 lg:px-5">
-            <div className="flex justify-between items-center h-14 gap-3">
+            <div className="flex justify-between items-center h-20 gap-3">
               {/* Logo */}
               <Link
                 to="/"
                 aria-label="Athar home"
                 className="flex items-center shrink-0 rounded-lg transition-opacity hover:opacity-90 active:scale-[0.98]"
               >
-                <AtharLogo height={34} />
+                <AtharLogo height={72} />
               </Link>
 
               {/* Desktop links */}
@@ -245,7 +249,7 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
                           transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
                           className="absolute end-0 top-full pt-2 w-60 origin-top-right"
                         >
-                          <div className="rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur-xl shadow-[0_24px_60px_-20px_rgb(0_0_0/0.8)] p-2">
+                          <div className="rounded-2xl border border-white/10 bg-slate-900/95  shadow-[0_24px_60px_-20px_rgb(0_0_0/0.8)] p-2">
                             <div className="px-3 py-3 mb-1.5 bg-white/[0.04] rounded-xl">
                               <p className="text-xs text-slate-500 font-medium">
                                 Signed in as
@@ -338,7 +342,7 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[60]"
+              className="fixed inset-0 bg-slate-950/70  z-[60]"
             />
             <motion.div
               role="dialog"
@@ -348,10 +352,10 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 280 }}
-              className="fixed top-0 end-0 bottom-0 w-[300px] max-w-[85vw] bg-slate-900/95 backdrop-blur-xl z-[70] border-s border-white/10 p-5 flex flex-col shadow-2xl"
+              className="fixed top-0 end-0 bottom-0 w-[300px] max-w-[85vw] bg-slate-900/95  z-[70] border-s border-white/10 p-5 flex flex-col shadow-2xl"
             >
               <div className="flex justify-between items-center mb-6">
-                <AtharLogo height={30} />
+                <AtharLogo height={56} />
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   aria-label="Close menu"
@@ -442,7 +446,7 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowLogoutConfirm(false)}
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-950/80 "
             />
             <motion.div
               role="alertdialog"

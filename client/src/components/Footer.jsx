@@ -130,7 +130,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16 mb-14">
           <div>
             <Link to="/" aria-label="Athar home" className="inline-flex items-center mb-6">
-              <AtharLogo height={40} />
+              <AtharLogo height={50} />
             </Link>
 
             <p className="text-sm leading-relaxed text-slate-400 mb-7 max-w-sm">

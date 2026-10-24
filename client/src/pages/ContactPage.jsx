@@ -85,8 +85,8 @@ const ContactPage = () => {
     >
       {/* Background Ambience */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-[-10%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px]" />
-        <div className="absolute bottom-0 right-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px]" />
+        <div className="absolute top-0 left-[-10%] w-[40%] h-[40%] bg-emerald-500/5 hidden" />
+        <div className="absolute bottom-0 right-[-10%] w-[40%] h-[40%] bg-blue-500/5 hidden" />
       </div>
 
       <div className="relative z-10 py-12 lg:py-20">
@@ -138,7 +138,7 @@ const ContactPage = () => {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-3 bg-slate-900/40 border border-slate-800 p-8 md:p-10 rounded-3xl backdrop-blur-md"
+            className="lg:col-span-3 bg-slate-900/40 border border-slate-800 p-8 md:p-10 rounded-3xl "
           >
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">

@@ -68,7 +68,7 @@ const ItemCard = ({ item, onClick }) => {
         ) : (
           <div className="absolute top-3 start-3 z-20">
             <span
-              className={`inline-flex px-2.5 py-1 text-[11px] font-medium rounded-full border backdrop-blur-md ${statusStyles}`}
+              className={`inline-flex px-2.5 py-1 text-[11px] font-medium rounded-full border  ${statusStyles}`}
             >
               {statusLabel}
             </span>

@@ -45,7 +45,7 @@ const LostReportDetailsModal = ({ reportId, isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-150 flex items-center justify-center pt-15">
       <div
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+        className="absolute inset-0 bg-slate-950/80 "
         onClick={onClose}
       />
 

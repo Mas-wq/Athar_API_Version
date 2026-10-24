@@ -21,8 +21,8 @@ const HowItWorks = () => {
     >
       {/* Background Ambience */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/10 blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/5 blur-[120px]" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/10 hidden" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/5 hidden" />
       </div>
 
       <div className="relative z-10 py-12 lg:py-20">
@@ -159,7 +159,7 @@ const ProcessCard = ({ number, icon, title, desc, color }) => {
   return (
     <motion.div
       whileHover={{ y: -8 }}
-      className="relative p-8 rounded-3xl bg-slate-900/60 border border-slate-800 backdrop-blur-md group"
+      className="relative p-8 rounded-3xl bg-slate-900/60 border border-slate-800  group"
     >
       <div
         className={`text-5xl font-semibold opacity-10 absolute top-4 end-6 transition-opacity group-hover:opacity-20 ${
@@ -186,7 +186,7 @@ const ProcessCard = ({ number, icon, title, desc, color }) => {
 };
 
 const FeatureBox = ({ title, desc }) => (
-  <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/10 hover:bg-white/20 transition-all">
+  <div className="bg-white/10  p-6 rounded-2xl border border-white/10 hover:bg-white/20 transition-all">
     <div className="w-8 h-8 rounded-full bg-emerald-400/20 flex items-center justify-center mb-4">
       <CheckCircle2 size={18} className="text-emerald-300" />
     </div>

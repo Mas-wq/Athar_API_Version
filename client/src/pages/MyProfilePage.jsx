@@ -82,7 +82,7 @@ const MyProfilePage = () => {
 
         <div className="relative">
           {/* Background Glow Effect */}
-          <div className="absolute -top-24 -start-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute -top-24 -start-24 w-64 h-64 bg-emerald-500/10 rounded-full hidden pointer-events-none" />
 
           <div className="flex flex-col md:flex-row gap-10">
             {/* Profile Sidebar / Identity Card */}

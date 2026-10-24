@@ -115,7 +115,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-slate-950/40 backdrop-blur-md"
+            className="absolute inset-0 bg-slate-950/40 "
             onClick={onClose}
           />
 
@@ -124,7 +124,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className="relative w-full max-w-5xl grid lg:grid-cols-2 bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-emerald-500/10 overflow-hidden border border-emerald-500/20"
+            className="relative w-full max-w-5xl grid lg:grid-cols-2 bg-slate-900/95  rounded-3xl shadow-2xl shadow-emerald-500/10 overflow-hidden border border-emerald-500/20"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
 
@@ -148,7 +148,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="p-6 md:p-10 lg:p-12 flex flex-col justify-center bg-slate-900/40 backdrop-blur-sm"
+              className="p-6 md:p-10 lg:p-12 flex flex-col justify-center bg-slate-900/40 "
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -156,7 +156,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 transition={{ delay: 0.3 }}
                 className="lg:hidden flex items-center gap-2.5 mb-6 justify-center"
               >
-                <AtharLogo height={34} />
+                <AtharLogo height={40} />
               </motion.div>
 
               <motion.div
@@ -413,7 +413,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   repeat: 0,
                   ease: "easeInOut",
                 }}
-                className="absolute top-0 start-0 w-72 h-72 bg-emerald-500/20 blur-[120px] rounded-full"
+                className="absolute top-0 start-0 w-72 h-72 bg-emerald-500/20 hidden rounded-full"
               />
               <motion.div
                 animate={{
@@ -426,7 +426,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   ease: "easeInOut",
                   delay: 1,
                 }}
-                className="absolute bottom-0 end-0 w-64 h-64 bg-teal-500/15 blur-[100px] rounded-full"
+                className="absolute bottom-0 end-0 w-64 h-64 bg-teal-500/15 hidden rounded-full"
               />
 
               <div className="relative z-10">
@@ -434,7 +434,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   whileHover={{ scale: 1.05 }}
                   className="flex items-center gap-2.5 mb-8"
                 >
-                  <AtharLogo height={40} />
+                  <AtharLogo height={46} />
                 </motion.div>
 
                 <motion.h2
@@ -473,7 +473,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-emerald-500/20 hover:bg-white/10 hover:border-emerald-500/40 transition-all cursor-pointer"
+                  className="bg-white/5  p-4 rounded-xl border border-emerald-500/20 hover:bg-white/10 hover:border-emerald-500/40 transition-all cursor-pointer"
                 >
                   <UserPlus className="text-emerald-400 mb-2" size={24} />
                   <p className="text-white text-xs font-bold">
@@ -486,7 +486,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-teal-500/20 hover:bg-white/10 hover:border-teal-500/40 transition-all cursor-pointer"
+                  className="bg-white/5  p-4 rounded-xl border border-teal-500/20 hover:bg-white/10 hover:border-teal-500/40 transition-all cursor-pointer"
                 >
                   <Search className="text-teal-400 mb-2" size={24} />
                   <p className="text-white text-xs font-bold">Report Items</p>
@@ -497,7 +497,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-cyan-500/20 hover:bg-white/10 hover:border-cyan-500/40 transition-all cursor-pointer"
+                  className="bg-white/5  p-4 rounded-xl border border-cyan-500/20 hover:bg-white/10 hover:border-cyan-500/40 transition-all cursor-pointer"
                 >
                   <MapPin className="text-cyan-400 mb-2" size={24} />
                   <p className="text-white text-xs font-bold">Campus Ready</p>
@@ -508,7 +508,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   transition={{ type: "spring", stiffness: 300 }}
-                  className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-amber-500/20 hover:bg-white/10 hover:border-amber-500/40 transition-all cursor-pointer"
+                  className="bg-white/5  p-4 rounded-xl border border-amber-500/20 hover:bg-white/10 hover:border-amber-500/40 transition-all cursor-pointer"
                 >
                   <Clock className="text-amber-400 mb-2" size={24} />
                   <p className="text-white text-xs font-bold">Faster Claims</p>

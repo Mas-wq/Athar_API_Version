@@ -3,21 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Athar | أثر — Smart Lost &amp; Found</title>
+    <link id="athar-theme-favicon" rel="icon" type="image/svg+xml" href="/branding/logos/athar-mark-dark.svg" />
+    <meta name="theme-color" content="#0a0f13" />
     <script>
+      let initialTheme = "dark";
       try {
         const savedTheme = localStorage.getItem("athar-theme");
-        if (savedTheme === "light" || savedTheme === "dark") {
-          document.documentElement.dataset.theme = savedTheme;
-        }
+        if (savedTheme === "light" || savedTheme === "dark") initialTheme = savedTheme;
       } catch {
         // Keep the default theme when browser storage is unavailable.
       }
+      document.documentElement.dataset.theme = initialTheme;
+      document.getElementById("athar-theme-favicon").href =
+        `/branding/logos/athar-mark-${initialTheme}.svg`;
+      document.querySelector('meta[name="theme-color"]').content =
+        initialTheme === "light" ? "#f3f7f5" : "#0a0f13";
     </script>
-
-    <title>Athar | أثر — Smart Lost &amp; Found</title>
-    <link rel="icon" type="image/svg+xml" href="/athar-mark.svg" />
-    <link rel="alternate icon" type="image/png" href="/athar-favicon.png" />
-    <meta name="theme-color" content="#0a0f13" />
   </head>
   <body>
     <div id="root"></div>

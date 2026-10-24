@@ -40,8 +40,8 @@ export default function PageShell({
     <div className={`relative ${v.outer} ${className}`.trim()}>
       {withGlow && (
         <div className="fixed inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
-          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-400/[0.07] blur-[120px] rounded-full" />
-          <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-teal-500/[0.07] blur-[120px] rounded-full" />
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-400/[0.07] hidden rounded-full" />
+          <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-teal-500/[0.07] hidden rounded-full" />
         </div>
       )}
 
