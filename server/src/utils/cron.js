@@ -4,6 +4,13 @@ import { usersPendingTable } from "../models/index.js";
 import { lt } from "drizzle-orm";
 import { finalizeDueHandovers } from "../controllers/conversation.controller.js";
 import { processAiJobQueue, recoverGroqAuthFailures } from "../../services/aiJobService.js";
+import {
+  closeDueAuctions,
+  handleNoShows,
+  runNoticeStep,
+  runStartStep,
+  sendEndingSoonNotifications,
+} from "../../services/auctionService.js";
 
 export const initCronJobs = () => {
   // Runs every hour
@@ -16,6 +23,8 @@ export const initCronJobs = () => {
         .where(lt(usersPendingTable.created_at, twentyFourHoursAgo));
 
       console.log("Successfully cleaned up old pending users");
+      await runNoticeStep();
+      await runStartStep();
     } catch (err) {
       console.error("Cleanup Cron Failed:", err);
     }
@@ -26,6 +35,16 @@ export const initCronJobs = () => {
       await finalizeDueHandovers();
     } catch (err) {
       console.error("Handover finalization job failed:", err);
+    }
+  });
+
+  cron.schedule("* * * * *", async () => {
+    try {
+      await closeDueAuctions();
+      await handleNoShows();
+      await sendEndingSoonNotifications();
+    } catch (err) {
+      console.error("Auction cron job failed:", err);
     }
   });
 

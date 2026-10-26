@@ -4,6 +4,8 @@ import {
   claimsTable,
   conversationsTable,
   foundItemsTable,
+  auctionsTable,
+  bidsTable,
   handoverRequestsTable,
 } from "../models/index.js";
 import { enqueueAiJob } from "../../services/aiJobService.js";
@@ -26,6 +28,10 @@ const publicItem = (item) => ({
   public_details: item.public_details,
   image_urls: item.image_urls,
   status: item.status,
+  auction_notice_at: item.auction_notice_at || null,
+  auction_opt_out: Boolean(item.auction_opt_out),
+  auction_id: item.auction_id || null,
+  auction_current_price: item.auction_current_price || null,
   created_at: item.created_at,
   updated_at: item.updated_at,
 });
@@ -34,10 +40,24 @@ export const getMyFoundItems = async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    const items = await db.select().from(foundItemsTable)
+    const rows = await db.select({
+      item: foundItemsTable,
+      auction_id: auctionsTable.id,
+      auction_start_price: auctionsTable.start_price,
+      auction_current_price: auctionsTable.current_price,
+    }).from(foundItemsTable)
+      .leftJoin(auctionsTable, and(
+        eq(auctionsTable.found_item_id, foundItemsTable.id),
+        inArray(auctionsTable.status, ["OPEN", "AWAITING_PICKUP"]),
+      ))
       .where(eq(foundItemsTable.finder_id, userId))
       .orderBy(desc(foundItemsTable.created_at));
-    return res.status(200).json({ foundItems: items.map(publicItem) });
+    const items = rows.map(({ item, auction_id, auction_start_price, auction_current_price }) => publicItem({
+      ...item,
+      auction_id,
+      auction_current_price: auction_current_price || auction_start_price || null,
+    }));
+    return res.status(200).json({ foundItems: items });
   } catch (error) {
     console.error("Could not load user's found items:", error);
     return res.status(500).json({ message: "Could not load your found items" });
@@ -63,7 +83,7 @@ export const deleteMyFoundItem = async (req, res) => {
         throw error;
       }
       if (item.status !== "FOUND") {
-        const error = new Error("You can delete a found item only before a claim is approved or delivery is completed");
+        const error = new Error("You can delete a found item only before it is claimed, auctioned, or returned");
         error.statusCode = 409;
         throw error;
       }
@@ -85,7 +105,12 @@ export const deleteMyFoundItem = async (req, res) => {
           eq(conversationsTable.found_item_id, itemId),
           inArray(handoverRequestsTable.status, ["REQUESTED", "AWAITING_FINALIZATION", "DISPUTED"]),
         )).limit(1);
-      if (activeClaim || activeConversation || activeHandover) {
+      const [auctionWithBids] = await tx.select({ id: bidsTable.id })
+        .from(auctionsTable)
+        .innerJoin(bidsTable, eq(bidsTable.auction_id, auctionsTable.id))
+        .where(eq(auctionsTable.found_item_id, itemId))
+        .limit(1);
+      if (activeClaim || activeConversation || activeHandover || auctionWithBids) {
         const error = new Error("This found item has an active claim or handover. Resolve it before deleting the item.");
         error.statusCode = 409;
         throw error;

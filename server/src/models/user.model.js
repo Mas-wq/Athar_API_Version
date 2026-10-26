@@ -22,6 +22,8 @@ export const usersTable = pgTable("users", {
   is_active: boolean("is_active").notNull().default(true),
   // Better to default to true here because they already verified to get in
   email_verified: boolean("email_verified").notNull().default(true),
+  bid_strikes: integer("bid_strikes").notNull().default(0),
+  bidding_banned: boolean("bidding_banned").notNull().default(false),
   created_at: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

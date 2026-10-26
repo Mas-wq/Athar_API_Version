@@ -11,7 +11,8 @@
     "dev:client": "cd client && npm run dev",
     "dev:all": "npm run dev",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "db:setup": "cd server && npm run db:push && npm run seed"
+    "db:setup": "cd server && npm run db:push && npm run seed",
+    "smoke:auction": "npm --prefix server run smoke:auction"
   },
   "keywords": [
     "lost-and-found",

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { BarChart3, CheckCircle2, ClipboardList, PackageCheck, Users } from "lucide-react";
+import { BarChart3, CheckCircle2, ClipboardList, PackageCheck, Users, Gavel, BadgeCheck, CircleX, Coins } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../context/auth.context";
 import { AccessCard, LoadingState } from "../components/ui";
@@ -11,12 +11,12 @@ const AdminDashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "ADMIN") { setLoading(false); return; }
+    if (!isAuthenticated || user?.role !== "ADMIN") return undefined;
     api.get("/admin/dashboard")
       .then(({ data }) => setStats(data.data))
       .catch(() => setStats(null))
       .finally(() => setLoading(false));
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?.id, user?.role]);
 
   if (!isAuthenticated || user?.role !== "ADMIN") return <AccessCard icon={BarChart3} title="Admin access required" description="This dashboard is available to the Athar administrator." />;
   return <PageShell containerClassName="max-w-6xl"><div className="py-12">
@@ -30,6 +30,14 @@ const AdminDashboardPage = () => {
         <Stat icon={CheckCircle2} label="Claims accepted · 7 days" value={stats.claims_approved_last_7_days} />
         <Stat icon={Users} label="Accepted claims total" value={stats.claims_approved_total} />
       </div>
+      <h2 className="mb-4 mt-8 text-lg font-bold text-white">Auction activity</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Stat icon={Gavel} label="Active auctions" value={stats.active_auctions} />
+        <Stat icon={BadgeCheck} label="Items sold" value={stats.items_sold} />
+        <Stat icon={PackageCheck} label="Items collected" value={stats.items_collected} />
+        <Stat icon={CircleX} label="Unsold items" value={stats.unsold_items} />
+        <Stat icon={Coins} label="Winning amounts · EGP" value={stats.total_winning_amount} />
+      </div>
       <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div><p className="font-bold text-white">Athar AI Agent</p><p className="mt-1 text-sm text-slate-400">Groq handles assistant chat, item matching, photo comparison, and claim review.</p></div>
@@ -40,12 +48,13 @@ const AdminDashboardPage = () => {
       </section>
       <div className="mt-8 flex flex-wrap gap-3">
         <Link to="/manage-users" className="rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:border-emerald-500/40">Manage users</Link>
+        <Link to="/admin/auctions" className="rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:border-cyan-500/40">Manage auctions</Link>
         <Link to="/lost-reports" className="rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:border-emerald-500/40">Browse all reports</Link>
       </div>
     </>}
   </div></PageShell>;
 };
 
-const Stat = ({ icon: Icon, label, value }) => <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6"><div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400"><Icon size={20} /></div><p className="text-3xl font-semibold text-white">{value ?? 0}</p><p className="mt-2 text-sm text-slate-400">{label}</p></div>;
+const Stat = ({ icon: Icon, label, value }) => <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6"><div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">{React.createElement(Icon, { size: 20 })}</div><p className="text-3xl font-semibold text-white">{value ?? 0}</p><p className="mt-2 text-sm text-slate-400">{label}</p></div>;
 
 export default AdminDashboardPage;

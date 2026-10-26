@@ -1,23 +1,29 @@
 import React from "react";
-import { Package, MapPin, Calendar, ArrowRight, Sparkles, CircleCheck } from "lucide-react";
+import { Package, MapPin, Calendar, ArrowRight, Sparkles, CircleCheck, Gavel } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router";
 
 const ItemCard = ({ item, onClick }) => {
   const imageUrl = item.image_urls?.[0] || null;
 
   const itemStatus = item.status?.toUpperCase();
   const statusLabel =
-    itemStatus === "RETURNED"
-      ? "Delivered to owner"
-      : itemStatus === "CLAIMED"
-        ? "Claim approved · collection pending"
-        : "Available to claim";
+    itemStatus === "RETURNED" ? "Returned to owner"
+      : itemStatus === "SOLD" ? "Sold · collected"
+        : itemStatus === "CLAIMED" ? "Claim approved · collection pending"
+          : itemStatus === "IN_AUCTION" ? "In auction"
+            : itemStatus === "UNCLAIMED" ? "Unclaimed"
+              : "Available to claim";
   const statusStyles =
-    itemStatus === "RETURNED"
+    ["RETURNED", "SOLD"].includes(itemStatus)
       ? "bg-teal-500/15 text-teal-200 border-teal-400/30"
       : itemStatus === "CLAIMED"
         ? "bg-amber-500/15 text-amber-200 border-amber-400/30"
-        : "bg-emerald-500/15 text-emerald-200 border-emerald-400/30";
+        : itemStatus === "IN_AUCTION"
+          ? "bg-cyan-500/15 text-cyan-200 border-cyan-400/30"
+          : itemStatus === "UNCLAIMED"
+            ? "bg-slate-500/15 text-slate-200 border-slate-400/30"
+            : "bg-emerald-500/15 text-emerald-200 border-emerald-400/30";
 
   return (
     <motion.article
@@ -59,11 +65,21 @@ const ItemCard = ({ item, onClick }) => {
         )}
 
         {/* Completion status: shown only after both parties finish handover */}
-        {itemStatus === "RETURNED" ? (
+        {["RETURNED", "SOLD"].includes(itemStatus) ? (
           <div className="absolute inset-x-0 top-0 z-20 flex justify-center p-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-teal-200/60 bg-teal-300 px-3.5 py-1.5 text-xs font-semibold text-slate-950 shadow-lg shadow-teal-950/40">
-              <CircleCheck size={15} strokeWidth={2.5} /> Delivered to owner
+              <CircleCheck size={15} strokeWidth={2.5} /> {itemStatus === "SOLD" ? "Sold · collected" : "Returned to owner"}
             </span>
+          </div>
+        ) : itemStatus === "IN_AUCTION" ? (
+          <div className="absolute inset-x-0 top-0 z-20 flex justify-center p-3">
+            <Link
+              to={item.auction_id ? `/auctions/${item.auction_id}` : "/auctions"}
+              onClick={(event) => event.stopPropagation()}
+              className="inline-flex items-center gap-2 rounded-full border border-cyan-200/60 bg-cyan-300 px-3.5 py-1.5 text-xs font-bold text-slate-950 shadow-lg"
+            >
+              <Gavel size={14} /> In auction · {item.auction_current_price || "View bids"} {item.auction_current_price ? "EGP" : ""}
+            </Link>
           </div>
         ) : (
           <div className="absolute top-3 start-3 z-20">

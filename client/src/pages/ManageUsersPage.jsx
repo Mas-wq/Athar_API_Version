@@ -25,7 +25,7 @@ const ManageUsersPage = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [roleFilter] = useState("all");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const navigate = useNavigate();
@@ -80,6 +80,16 @@ const ManageUsersPage = () => {
       toast.error(error.response?.data?.message || "Operation failed", {
         theme: "dark",
       });
+    }
+  };
+
+  const updateStrikeStatus = async (userId, action) => {
+    try {
+      await api.patch(`/admin/users/${userId}/strikes`, { action });
+      toast.success(action === "ADD" ? "Strike added" : action === "REMOVE" ? "Strike removed" : "Bidding ban lifted", { theme: "dark" });
+      await fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not update bidding status", { theme: "dark" });
     }
   };
 
@@ -226,6 +236,9 @@ const ManageUsersPage = () => {
                       Auth Status
                     </th>
                     <th className="px-8 py-6 text-start text-[11px] font-semibold text-slate-500">
+                      Bidding status
+                    </th>
+                    <th className="px-8 py-6 text-start text-[11px] font-semibold text-slate-500">
                       Action
                     </th>
                   </tr>
@@ -270,6 +283,14 @@ const ManageUsersPage = () => {
                       </td>
                       <td className="px-8 py-6">
                         <StatusBadge active={user.is_active} />
+                      </td>
+                      <td className="px-8 py-6">
+                        <p className={`text-xs font-bold ${user.bidding_banned ? "text-rose-300" : "text-slate-300"}`}>{user.bid_strikes || 0} strikes · {user.bidding_banned ? "Banned" : "Allowed"}</p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <button type="button" onClick={() => updateStrikeStatus(user.id, "ADD")} className="rounded-lg border border-amber-400/25 px-2 py-1 text-[10px] font-bold text-amber-200 hover:bg-amber-500/10">Add strike</button>
+                          <button type="button" disabled={!user.bid_strikes} onClick={() => updateStrikeStatus(user.id, "REMOVE")} className="rounded-lg border border-slate-600 px-2 py-1 text-[10px] font-bold text-slate-300 disabled:opacity-40">Remove strike</button>
+                          {user.bidding_banned && <button type="button" onClick={() => updateStrikeStatus(user.id, "LIFT_BAN")} className="rounded-lg border border-emerald-400/25 px-2 py-1 text-[10px] font-bold text-emerald-200 hover:bg-emerald-500/10">Lift ban</button>}
+                        </div>
                       </td>
                       <td className="px-8 py-6">
                         <button

@@ -1,5 +1,5 @@
 import { db } from "../src/index.js";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   foundItemsTable,
   lostReportsTable,
@@ -181,14 +181,14 @@ const scoreAndStoreMatch = async (report, foundItem) => {
   };
 };
 export const runAutoMatchPair = async (report, foundItem) => {
-  if (!report || report.status !== "OPEN" || !foundItem || foundItem.status !== "FOUND") return null;
+  if (!report || report.status !== "OPEN" || !foundItem || !["FOUND", "IN_AUCTION"].includes(foundItem.status)) return null;
   if (String(report.user_id) === String(foundItem.finder_id)) return null;
   return scoreAndStoreMatch(report, foundItem);
 };
 
 // Run after a found item is recorded or updated.
 export const runAutoMatch = async (newFoundItem) => {
-  if (!newFoundItem || newFoundItem.status !== "FOUND") return [];
+  if (!newFoundItem || !["FOUND", "IN_AUCTION"].includes(newFoundItem.status)) return [];
 
   {
     const openReports = await db
@@ -214,7 +214,7 @@ export const runAutoMatchForLostReport = async (newLostReport) => {
     const foundItems = await db
       .select()
       .from(foundItemsTable)
-      .where(eq(foundItemsTable.status, "FOUND"))
+      .where(inArray(foundItemsTable.status, ["FOUND", "IN_AUCTION"]))
       .orderBy(desc(foundItemsTable.created_at));
     const candidates = foundItems.filter((item) => item.finder_id !== newLostReport.user_id);
     const results = [];

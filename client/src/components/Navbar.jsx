@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
 import { useAuth } from "../context/auth.context";
 import { api } from "../lib/api";
-import { motion, AnimatePresence } from "framer-motion"; // Added for modern feel
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   ChevronDown,
@@ -23,15 +23,17 @@ import {
   Bot,
   Moon,
   Sun,
+  Gavel,
 } from "lucide-react";
 import AtharLogo from "./AtharLogo";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout, isLoading } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -64,7 +66,6 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) {
-      setUnreadMessageCount(0);
       return undefined;
     }
 
@@ -94,6 +95,8 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
     ? [
         { to: "/", label: "Home", icon: Home },
         { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { to: "/auctions", label: "Auctions", icon: Gavel },
+        { to: "/admin/auctions", label: "Auction Admin", icon: Gavel },
         { to: "/found-items", label: "Found Items", icon: Search },
         { to: "/lost-reports", label: "Lost Reports", icon: AlertCircle },
         { to: "/manage-users", label: "Users", icon: User },
@@ -102,11 +105,13 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
       ]
     : [
         { to: "/", label: "Home", icon: Home },
+        { to: "/auctions", label: "Auctions", icon: Gavel },
         { to: "/found-items", label: "Found Items", icon: Search },
         { to: "/lost-reports", label: "Lost Reports", icon: AlertCircle },
         { to: "/report-lost-item", label: "Report Lost", icon: AlertCircle },
         { to: "/add-found-item", label: "Add Found", icon: Package },
         ...(user ? [
+          ...(user.role === "USER" ? [{ to: "/my-bids", label: "My Bids", icon: Gavel }] : []),
           { to: "/chats", label: "Chats", icon: Mail },
           { to: "/ai-assistant", label: "Athar AI", icon: Bot },
         ] : []),
@@ -195,6 +200,7 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
 
               {/* Desktop auth */}
               <div className="hidden lg:flex items-center gap-2 shrink-0">
+                <NotificationBell />
                 <button
                   type="button"
                   onClick={toggleTheme}
@@ -309,6 +315,7 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
 
               {/* Mobile menu trigger */}
               <div className="lg:hidden flex items-center gap-1">
+                <NotificationBell />
                 <button
                   type="button"
                   onClick={toggleTheme}

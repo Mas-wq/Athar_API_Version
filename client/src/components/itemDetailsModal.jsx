@@ -16,7 +16,7 @@ import { api } from "../lib/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/auth.context";
 import { useNavigate } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const ItemDetailsModal = ({ itemId, isOpen, onClose }) => {
   const [item, setItem] = useState(null);
@@ -127,6 +127,18 @@ const ItemDetailsModal = ({ itemId, isOpen, onClose }) => {
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-center font-bold text-amber-200">
                   Claim approved — collection pending
                 </div>
+              )}
+              {item.status === "IN_AUCTION" && (
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-4">
+                  <div><p className="font-bold text-cyan-200">This item is in an auction</p><p className="mt-1 text-sm text-cyan-100/70">Current bid: {item.auction_current_price || "No bids yet"}{item.auction_current_price ? " EGP" : ""}</p></div>
+                  <button type="button" onClick={() => navigate(item.auction_id ? `/auctions/${item.auction_id}` : "/auctions")} className="rounded-xl border border-cyan-300/30 px-4 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-300/10">View auction</button>
+                </div>
+              )}
+              {item.status === "SOLD" && (
+                <div className="rounded-2xl border border-teal-500/30 bg-teal-500/10 px-5 py-4 text-center font-bold text-teal-300">Sold and collected</div>
+              )}
+              {item.status === "UNCLAIMED" && (
+                <div className="rounded-2xl border border-slate-500/30 bg-slate-500/10 px-5 py-4 text-center font-bold text-slate-200">This item is unclaimed after its auction ended</div>
               )}
               {/* Primary Info Block */}
               <div className="grid lg:grid-cols-2 gap-8">
@@ -260,7 +272,7 @@ const ItemDetailsModal = ({ itemId, isOpen, onClose }) => {
             >
               Close
             </button>
-            {!isPrivileged && item?.status === "FOUND" && (
+            {!isPrivileged && ["FOUND", "IN_AUCTION"].includes(item?.status) && (
               <button
                 onClick={() =>
                   navigate(isAuthenticated ? `/claim/${itemId}` : "/login")
