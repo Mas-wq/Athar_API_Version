@@ -250,36 +250,6 @@ npm run db:push
 cd ..
 ```
 
-### Inspect tables and apply the auction removal
-
-The PostgreSQL table definitions used by the app are in `server/src/models/`. The configured database connection is in `server/.env` under `DATABASE_URL`.
-
-To browse the configured database visually, run this from the project root:
-
-```powershell
-cd server
-npm run db:studio
-```
-
-To list the actual tables in the connected database, run this in pgAdmin's Query Tool or `psql`:
-
-```sql
-SELECT table_schema, table_name
-FROM information_schema.tables
-WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-ORDER BY table_name;
-```
-
-To inspect a table's columns, replace `found_items` with its name:
-
-```sql
-SELECT column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'found_items'
-ORDER BY ordinal_position;
-```
-
-For an existing database, back it up and run `server/migrations/2026-10-30-remove-auction.sql` once in pgAdmin's Query Tool or with `psql` connected to the same database in `DATABASE_URL`. Then run `npm run db:push` from the `server` folder to sync the remaining schema. Fresh databases only need the normal `npm run db:setup` step.
 
 ### Clear saved chat messages and move chat history to Redis
 
