@@ -9,6 +9,14 @@ import { AuthProvider } from "./context/auth.context";
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
 import "react-toastify/dist/ReactToastify.css";
 
+try {
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith("athar-ai-chat-"))
+    .forEach((key) => localStorage.removeItem(key));
+} catch {
+  // Browser storage may be unavailable; server-side Redis remains the temporary history store.
+}
+
 // localhost and 127.0.0.1 have separate browser cookies and local storage.
 // Keep the app on one origin so a refresh cannot appear to switch accounts.
 if (window.location.hostname === "127.0.0.1") {

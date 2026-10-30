@@ -6,13 +6,13 @@ import {
   claimQuestionSessionsTable,
   foundItemsTable,
   conversationsTable,
-  conversationMessagesTable,
   itemMatchesTable,
 } from "../models/index.js";
 
 import { enqueueAiJob } from "../../services/aiJobService.js";
 import { generateClaimOwnershipQuestions } from "../../services/matchingService.js";
 import { addFoundItem } from "./foundItem.controller.js";
+import { createSystemMessage } from "../services/conversationMessage.service.js";
 
 export { addFoundItem };
 
@@ -487,13 +487,6 @@ export const myClaimSubmit = async (req, res) => {
         .where(eq(claimQuestionSessionsTable.id, lockedSession.id));
       await tx.update(conversationsTable).set({ status: "PENDING_FINDER", updated_at: new Date() })
         .where(eq(conversationsTable.id, conversation.id));
-      await tx.insert(conversationMessagesTable).values({
-        conversation_id: conversation.id,
-        sender_id: user_id,
-        sender_name: "Claimant",
-        message_type: "SYSTEM",
-        message: `A claim was submitted for lost report ${reportNumber(report.id)}. The ownership answers scored ${questionScore}%; the finder can review each answer and make the final decision.`,
-      });
       if (!savedMatch) {
         await enqueueAiJob(tx, "MATCH_PAIR", {
           lost_report_id: report.id,
@@ -506,6 +499,11 @@ export const myClaimSubmit = async (req, res) => {
     if (submission.conflict) {
       return res.status(409).json({ message: "A claim for this report and found item is already in progress" });
     }
+    await createSystemMessage(
+      submission.claim.conversation_id,
+      `A claim was submitted for lost report ${reportNumber(report.id)}. The ownership answers scored ${questionScore}%; the finder can review each answer and make the final decision.`,
+      { senderId: user_id, senderName: "Claimant" },
+    );
     return res.status(201).json({ success: true, matching_status: "COMPLETED", claim: submission.claim });
   } catch (error) {
     console.error("Claim Submission Error:", error);
@@ -676,16 +674,13 @@ export const deleteMyClaim = async (req, res) => {
         await tx.update(conversationsTable)
           .set({ status: "SUGGESTED", updated_at: new Date() })
           .where(eq(conversationsTable.id, existingClaim.conversation_id));
-        await tx.insert(conversationMessagesTable).values({
-          conversation_id: existingClaim.conversation_id,
-          sender_id: null,
-          sender_name: "Athar AI Assistant",
-          message_type: "SYSTEM",
-          message: "The claimant withdrew this claim. The lost report remains open.",
-        });
       }
       await tx.delete(claimsTable).where(eq(claimsTable.id, claimId));
     });
+
+    if (existingClaim.conversation_id) {
+      await createSystemMessage(existingClaim.conversation_id, "The claimant withdrew this claim. The lost report remains open.");
+    }
 
     return res.status(200).json({
       message: "Claim cancelled successfully.",

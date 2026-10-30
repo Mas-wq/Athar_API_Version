@@ -2,6 +2,7 @@ import { and, count, eq, gte, inArray } from "drizzle-orm";
 import { db } from "../index.js";
 import { claimsTable, foundItemsTable, lostReportsTable, usersTable } from "../models/index.js";
 import { isGroqConfigured } from "../../services/matchingService.js";
+import { disconnectUserSockets } from "../realtime.js";
 
 export const getDashboardStats = async (_req, res) => {
   try {
@@ -70,6 +71,7 @@ const setUserActive = async (req, res, active) => {
     if (user.id === req.user.id) return res.status(400).json({ message: "You cannot deactivate your own account" });
     if (user.is_active === active) return res.status(400).json({ message: active ? "User is already active" : "User is already deactivated" });
     await db.update(usersTable).set({ is_active: active, updated_at: new Date() }).where(eq(usersTable.id, userId));
+    if (!active) disconnectUserSockets(userId);
     return res.status(200).json({ message: active ? "User activated" : "User deactivated" });
   } catch (error) {
     console.error("Could not update user status:", error);

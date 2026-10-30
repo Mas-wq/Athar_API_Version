@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { createServer } from "node:http";
 import "dotenv/config";
 import authRoutes from "./src/routes/auth.routes.js";
 import adminRoutes from "./src/routes/admin.routes.js";
@@ -14,6 +15,9 @@ import { authenticateToken } from "./src/middlewares/auth.middleware.js";
 import { optionalAuthenticateToken } from "./src/middlewares/optionalAuth.middleware.js";
 import { initCronJobs } from "./src/utils/cron.js";
 import cookieParser from "cookie-parser";
+import { createRealtimeServer } from "./src/realtime.js";
+import { connectRedis } from "./src/services/chatStore.js";
+import { createUserConversationMessage } from "./src/services/conversationMessage.service.js";
 
 const app = express();
 
@@ -66,6 +70,10 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/uploads", uploadRoutes);
 
 const PORT = process.env.PORT || 5102;
+const httpServer = createServer(app);
+
+createRealtimeServer(httpServer, allowedOrigins, createUserConversationMessage);
+void connectRedis();
 
 app.get("/", (req, res) => {
   res.send("Athar Smart Lost & Found Backend is running.");
@@ -73,6 +81,6 @@ app.get("/", (req, res) => {
 
 initCronJobs();
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

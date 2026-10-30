@@ -10,6 +10,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import otpGenerator from "otp-generator";
 import { sendVerificationEmail } from "../../services/email.js";
 import { generateEmailTemplate } from "../utils/emailTemplates.js";
+import { disconnectUserSockets } from "../realtime.js";
 
 const showLocalVerificationCodes =
   process.env.SHOW_LOCAL_VERIFICATION_CODES === "true" &&
@@ -297,6 +298,7 @@ export const logout = async (req, res) => {
     res.clearCookie("token", {
       ...baseCookieOptions,
     });
+    disconnectUserSockets(req.user.id);
 
     // 2. Return success message
     return res.status(200).json({ message: "Logged out successfully" });

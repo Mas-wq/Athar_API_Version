@@ -60,18 +60,23 @@ flowchart TB
     ADMIN["Administrator"]
     WEB["Web app<br/>React + Vite"]
     API["API server<br/>Node.js + Express"]
+    SOCKET["Live chat<br/>Socket.IO"]
     GUARD{"Session and role checks"}
     APP["Routes, controllers<br/>and application services"]
     DB[("PostgreSQL<br/>Drizzle ORM")]
+    REDIS[("Redis<br/>Temporary chat history")]
     GROQ["Groq API<br/>Chat, matching, questions"]
     LOCAL[("Local files<br/>Uploads and development mail")]
 
     USER --> WEB
     ADMIN --> WEB
     WEB -->|"HTTP requests and session cookie"| API
+    WEB <-->|"Live chat events and session cookie"| SOCKET
+    SOCKET --> API
     API --> GUARD
     GUARD --> APP
     APP -->|"Read and write data"| DB
+    APP -->|"Chat text · 7-day inactivity expiry"| REDIS
     APP -->|"AI features"| GROQ
     API --> LOCAL
 
@@ -87,7 +92,7 @@ flowchart TB
     class WEB frontend
     class API,APP backend
     class GUARD security
-    class DB data
+    class DB,REDIS data
     class GROQ external
     class LOCAL local
 ```
@@ -95,10 +100,10 @@ flowchart TB
 ### How a request moves through the app
 
 1. A person uses a page in the React application.
-2. The client sends an HTTP request to the Express API. During local development, Vite forwards `/api` and `/uploads` requests to the API server.
+2. The client sends ordinary requests to the API. Direct chat messages use a live Socket.IO connection; during local development, Vite forwards `/api`, `/uploads`, and `/socket.io` traffic to the API server.
 3. The API checks the session and, where needed, the user's role.
 4. A controller handles the request and calls a service for shared work such as matching or AI processing.
-5. Drizzle reads or updates PostgreSQL. AI features call Groq from the server.
+5. PostgreSQL stores accounts, reports, claims, conversations, and handover state. Redis temporarily stores chat text, capped at 100 messages per chat and removed after seven days without new activity. AI features call Groq from the server.
 6. The API returns a response to the browser.
 
 Groq is never called directly from the browser. API keys stay in the backend environment file.
@@ -133,8 +138,8 @@ The assistant uses the signed-in user's relevant public report and match context
 | Area | Main tools |
 | --- | --- |
 | Frontend | React, Vite, React Router, Tailwind CSS, Axios |
-| Backend | Node.js, Express, cookie-parser, CORS |
-| Database | PostgreSQL, Drizzle ORM, Drizzle Kit |
+| Backend | Node.js, Express, Socket.IO, cookie-parser, CORS |
+| Data | PostgreSQL and Drizzle ORM for application records; Redis for temporary chat messages |
 | AI | Groq Chat Completions API; ALLaM for chat and Qwen for matching and claim questions by default |
 | Background work | `node-cron` and a PostgreSQL-backed AI job queue |
 
@@ -160,7 +165,9 @@ The repository includes npm package manifests and lockfiles, but does not includ
 │   │   ├── middlewares/        # Authentication and role checks
 │   │   ├── models/             # Drizzle table definitions
 │   │   ├── routes/             # Express route groups
+│   │   ├── services/           # Temporary chat storage and shared services
 │   │   └── utils/              # Cron jobs and email templates
+│   ├── migrations/             # One-time SQL schema changes
 │   ├── .env.example            # Safe configuration template
 │   ├── index.js                # Express app entry point
 │   └── drizzle.config.js       # Drizzle Kit configuration
@@ -175,6 +182,7 @@ The repository includes npm package manifests and lockfiles, but does not includ
 - Git
 - Node.js **22.12 or newer** and npm
 - PostgreSQL running locally or reachable through a connection URL
+- A local Redis-compatible server (on Windows, Memurai or Redis through WSL)
 - A Groq account and API keys for the AI features you want to use
 
 No Python matching service or local model runtime is needed.
@@ -273,6 +281,23 @@ ORDER BY ordinal_position;
 
 For an existing database, back it up and run `server/migrations/2026-10-30-remove-auction.sql` once in pgAdmin's Query Tool or with `psql` connected to the same database in `DATABASE_URL`. Then run `npm run db:push` from the `server` folder to sync the remaining schema. Fresh databases only need the normal `npm run db:setup` step.
 
+### Clear saved chat messages and move chat history to Redis
+
+The message text is no longer stored in PostgreSQL. To clear all old chat text for every account (including admin accounts), open the correct database in pgAdmin, open **Query Tool**, then open and execute `server/migrations/2026-10-30-move-chat-history-to-redis.sql`. It removes the old rows and drops the `conversation_messages`, `ai_assistant_messages`, and unused legacy `claim_messages` tables. The `conversations` table and its claim, participant, read-marker, and handover data stay in PostgreSQL.
+
+Start Redis locally before starting the app. Docker is not required. On Windows, install [Memurai Developer](https://www.memurai.com/get-memurai), then open PowerShell as Administrator and run:
+
+```powershell
+Stop-Service Memurai -ErrorAction SilentlyContinue
+& "C:\Program Files\Memurai\memurai.exe" --port 6379 --save "" --appendonly no
+```
+
+Leave that terminal open. These startup settings disable Redis disk persistence; the project connects to `redis://127.0.0.1:6379` by default, so `REDIS_URL` only needs to be set if you use another address or port.
+
+If you open the site from a phone or another computer, add that browser address (for example, `http://192.168.1.5:5174`) to `CORS_ORIGIN` in `server/.env`, separated by a comma from the localhost origin, then restart the server.
+
+Each chat keeps at most its latest 100 messages, and its seven-day expiration is refreshed whenever a new message arrives. Stopping the local Redis process clears its in-memory messages sooner. For a hosted Redis service, configure `REDIS_URL` and disable disk persistence if chat text must never be written to durable storage.
+
 ### 6. Start the app
 
 From the project root, run:
@@ -299,6 +324,7 @@ Application secrets and server settings belong in `server/.env`. The safe templa
 | `NODE_ENV` | Runtime mode. Use `development` for local work. |
 | `CORS_ORIGIN` | Allowed browser origin; local default is `http://localhost:5174`. |
 | `DATABASE_URL` | PostgreSQL connection string, including the database name. |
+| `REDIS_URL` | Redis connection used for temporary chat messages; local default is `redis://127.0.0.1:6379`. |
 | `JWT_SECRET` | Private signing secret for authentication cookies. Use a long random value. |
 | `GROQ_CHAT_API_KEY` | Private Groq key used by the assistant. |
 | `GROQ_CHAT_MODEL` | Chat model ID; default is `allam-2-7b`. |
@@ -364,6 +390,8 @@ A signed-in conversation participant can use `/api/chat/conversations` to list c
 - `POST /api/chat/conversations/:conversationId/handover/dispute` — report a handover dispute.
 
 The API verifies that the signed-in person belongs to the conversation before returning its details or accepting an action.
+
+The browser connects to Socket.IO at `/socket.io` using the existing session cookie. It joins a conversation with `chat:join`, sends a direct message with `chat:send`, and receives new direct or system messages as `chat:message`. The Node server checks the participant, places the message in Redis, then broadcasts it. Athar AI questions continue through the HTTP API; the Node server calls Groq and keeps the recent AI exchange in Redis.
 
 ### Administrator-only routes
 

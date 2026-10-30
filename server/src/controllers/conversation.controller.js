@@ -1,28 +1,19 @@
-import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { db } from "../index.js";
 import {
   claimsTable,
-  conversationMessagesTable,
   conversationsTable,
   foundItemsTable,
   lostReportsTable,
   usersTable,
   handoverRequestsTable,
 } from "../models/index.js";
+import { getConversationMessages } from "../services/chatStore.js";
+import { createSystemMessage, createUserConversationMessage } from "../services/conversationMessage.service.js";
 
 const isParticipant = (conversation, userId) =>
   conversation.claimant_id === userId || conversation.finder_id === userId;
-
-const addSystemMessage = async (tx, conversationId, message) => {
-  await tx.insert(conversationMessagesTable).values({
-    conversation_id: conversationId,
-    sender_id: null,
-    sender_name: "Athar AI Assistant",
-    message_type: "SYSTEM",
-    message,
-  });
-};
 
 const publicDetailsForHandover = (value) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -88,12 +79,8 @@ export const listConversations = async (req, res) => {
       .orderBy(desc(conversationsTable.updated_at));
 
     const data = await Promise.all(rows.map(async (row) => {
-      const [lastMessage] = await db
-        .select({ message: conversationMessagesTable.message, created_at: conversationMessagesTable.created_at })
-        .from(conversationMessagesTable)
-        .where(eq(conversationMessagesTable.conversation_id, row.conversation.id))
-        .orderBy(desc(conversationMessagesTable.created_at))
-        .limit(1);
+      const messages = await getConversationMessages(row.conversation.id);
+      const lastMessage = messages.at(-1);
       const [counterpart] = await db
         .select({ full_name: usersTable.full_name })
         .from(usersTable)
@@ -114,7 +101,7 @@ export const listConversations = async (req, res) => {
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Could not load conversations:", error);
-    return res.status(500).json({ message: "Could not load chats" });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Could not load chats" });
   }
 };
 
@@ -141,23 +128,17 @@ export const getUnreadMessageCount = async (req, res) => {
       const lastReadAt = conversation.claimant_id === req.user.id
         ? conversation.claimant_last_read_at
         : conversation.finder_last_read_at;
-      const unreadConditions = [
-        eq(conversationMessagesTable.conversation_id, conversation.id),
-        or(isNull(conversationMessagesTable.sender_id), ne(conversationMessagesTable.sender_id, req.user.id)),
-        ne(conversationMessagesTable.message_type, "AI_ASSISTANT"),
-      ];
-      if (lastReadAt) unreadConditions.push(gt(conversationMessagesTable.created_at, lastReadAt));
-      const [result] = await db
-        .select({ value: count() })
-        .from(conversationMessagesTable)
-        .where(and(...unreadConditions));
-      unreadCount += Number(result?.value || 0);
+      const messages = await getConversationMessages(conversation.id);
+      unreadCount += messages.filter((message) => {
+        if (message.message_type === "AI_ASSISTANT" || message.sender_id === req.user.id) return false;
+        return !lastReadAt || new Date(message.created_at) > new Date(lastReadAt);
+      }).length;
     }
 
     return res.status(200).json({ unread_count: unreadCount });
   } catch (error) {
     console.error("Could not count unread messages:", error);
-    return res.status(500).json({ message: "Could not count unread messages" });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Could not count unread messages" });
   }
 };
 
@@ -173,14 +154,8 @@ export const markConversationRead = async (req, res) => {
     }
 
     const messageId = req.body.message_id;
-    const [lastVisibleMessage] = messageId
-      ? await db.select({ created_at: conversationMessagesTable.created_at })
-          .from(conversationMessagesTable)
-          .where(and(
-            eq(conversationMessagesTable.id, messageId),
-            eq(conversationMessagesTable.conversation_id, conversation.id),
-          ))
-      : [];
+    const messages = await getConversationMessages(conversation.id);
+    const lastVisibleMessage = messageId ? messages.find((message) => message.id === messageId) : null;
     if (messageId && !lastVisibleMessage) {
       return res.status(400).json({ message: "Invalid message" });
     }
@@ -198,7 +173,7 @@ export const markConversationRead = async (req, res) => {
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error("Could not mark chat as read:", error);
-    return res.status(500).json({ message: "Could not mark chat as read" });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Could not mark chat as read" });
   }
 };
 
@@ -238,14 +213,7 @@ export const getConversation = async (req, res) => {
     }
     if (handover) handover.qr_payload = makeHandoverQrPayload(handover, conversation);
 
-    const messages = await db
-      .select()
-      .from(conversationMessagesTable)
-      .where(eq(conversationMessagesTable.conversation_id, conversation.conversation.id))
-      .orderBy(asc(conversationMessagesTable.created_at));
-    const visibleMessages = messages.filter((message) => !(
-      message.message_type === "AI_ASSISTANT" && /\/found-items\?item=/.test(message.message)
-    ));
+    const messages = await getConversationMessages(conversation.conversation.id);
     const [claim] = await db
       .select({
         id: claimsTable.id,
@@ -265,7 +233,7 @@ export const getConversation = async (req, res) => {
         report_number: conversation.lost_report?.id
           ? `ATH-${String(conversation.lost_report.id).slice(0, 8).toUpperCase()}`
           : null,
-        messages: visibleMessages,
+        messages,
         claim: claim || null,
         handover: handover || null,
         viewer_role: req.user.id === conversation.conversation.claimant_id ? "CLAIMANT" : "FINDER",
@@ -273,39 +241,21 @@ export const getConversation = async (req, res) => {
     });
   } catch (error) {
     console.error("Could not load conversation:", error);
-    return res.status(500).json({ message: "Could not load chat" });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Could not load chat" });
   }
 };
 
 export const sendConversationMessage = async (req, res) => {
   try {
-    const message = typeof req.body.message === "string" ? req.body.message.trim() : "";
-    if (!message || message.length > 2000) {
-      return res.status(400).json({ message: "Message must be between 1 and 2000 characters" });
-    }
-    const [conversation] = await db
-      .select()
-      .from(conversationsTable)
-      .where(eq(conversationsTable.id, req.params.conversationId));
-    if (!conversation) return res.status(404).json({ message: "Chat not found" });
-    if (!isParticipant(conversation, req.user.id)) return res.status(403).json({ message: "This chat is not yours" });
-    if (conversation.status !== "ACCEPTED") {
-      return res.status(409).json({ message: "Messaging opens after the claim is accepted" });
-    }
-
-    const [user] = await db.select({ full_name: usersTable.full_name }).from(usersTable).where(eq(usersTable.id, req.user.id));
-    const [created] = await db.insert(conversationMessagesTable).values({
-      conversation_id: conversation.id,
-      sender_id: req.user.id,
-      sender_name: user?.full_name || "Athar member",
-      message_type: "USER",
-      message,
-    }).returning();
-    await db.update(conversationsTable).set({ updated_at: new Date() }).where(eq(conversationsTable.id, conversation.id));
-    return res.status(201).json({ success: true, message: created });
+    const message = await createUserConversationMessage({
+      user: req.user,
+      conversationId: req.params.conversationId,
+      message: req.body.message,
+    });
+    return res.status(201).json({ success: true, message });
   } catch (error) {
     console.error("Could not send message:", error);
-    return res.status(500).json({ message: "Could not send message" });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Could not send message" });
   }
 };
 
@@ -332,6 +282,7 @@ export const decideClaim = async (req, res) => {
       return res.status(409).json({ message: "Athar AI is still calculating the ownership evidence score. Please wait a moment and try again." });
     }
 
+    const systemMessages = [];
     await db.transaction(async (tx) => {
       if (accept) {
         const [lockedFoundItem] = await tx.select().from(foundItemsTable)
@@ -365,7 +316,10 @@ export const decideClaim = async (req, res) => {
           await tx.update(claimsTable)
             .set({ status: "REJECTED", updated_at: new Date() })
             .where(and(eq(claimsTable.conversation_id, other.id), eq(claimsTable.status, "PENDING")));
-          await addSystemMessage(tx, other.id, "Another claim was accepted for this found item, so this specific item is no longer available. Your lost report remains active.");
+          systemMessages.push({
+            conversationId: other.id,
+            message: "Another claim was accepted for this found item, so this specific item is no longer available. Your lost report remains active.",
+          });
         }
       }
       await tx.update(claimsTable).set({
@@ -374,10 +328,14 @@ export const decideClaim = async (req, res) => {
         updated_at: new Date(),
       }).where(eq(claimsTable.id, claim.id));
       await tx.update(conversationsTable).set({ status: accept ? "ACCEPTED" : "REJECTED", updated_at: new Date() }).where(eq(conversationsTable.id, conversation.id));
-      await addSystemMessage(tx, conversation.id, accept
-        ? "Good news! The finder accepted your claim. You can chat here to plan the return."
-        : "Sorry, the finder did not accept this claim. Your lost report is still open.");
+      systemMessages.push({
+        conversationId: conversation.id,
+        message: accept
+          ? "Good news! The finder accepted your claim. You can chat here to plan the return."
+          : "Sorry, the finder did not accept this claim. Your lost report is still open.",
+      });
     });
+    await Promise.all(systemMessages.map(({ conversationId, message }) => createSystemMessage(conversationId, message)));
     return res.status(200).json({ success: true, status: accept ? "ACCEPTED" : "REJECTED" });
   } catch (error) {
     console.error("Could not decide claim:", error);
@@ -422,8 +380,10 @@ export const completeHandoverIfDue = async (handoverId) => {
       .where(eq(claimsTable.id, claim.id));
     await tx.update(conversationsTable).set({ status: "DELIVERED", updated_at: now })
       .where(eq(conversationsTable.id, conversation.id));
-    await addSystemMessage(tx, conversation.id, "Delivered to owner. Both people confirmed the handover and the objection period ended.");
   });
+  if (finalized) {
+    await createSystemMessage(preview.conversation_id, "Delivered to owner. Both people confirmed the handover and the objection period ended.");
+  }
   return finalized;
 };
 
@@ -492,13 +452,7 @@ export const createHandoverRequest = async (req, res) => {
       ? `ATH-${String(handoverContext.lost_report.id).slice(0, 8).toUpperCase()}`
       : "the found-item record";
     const handoverMessage = `A handover plan was created for ${reportNumber}. Meet at ${meetingPlace}. It expires in 24 hours. Both people must scan the QR and confirm separately after meeting.`;
-    await db.insert(conversationMessagesTable).values({
-      conversation_id: conversation.id,
-      sender_id: req.user.id,
-      sender_name: req.user.full_name || "Athar member",
-      message_type: "SYSTEM",
-      message: handoverMessage,
-    });
+    await createSystemMessage(conversation.id, handoverMessage);
     return res.status(201).json({ success: true, handover });
   } catch (error) {
     console.error("Could not create handover request:", error);
@@ -546,9 +500,9 @@ export const confirmHandover = async (req, res) => {
         objection_until: objectionUntil,
         updated_at: new Date(),
       }).where(eq(handoverRequestsTable.id, handover.id)).returning();
-      await addSystemMessage(db, conversation.id, "Both people confirmed the handover. There is a 30-minute review period; report a problem in this chat before it ends.");
+      await createSystemMessage(conversation.id, "Both people confirmed the handover. There is a 30-minute review period; report a problem in this chat before it ends.");
     } else {
-      await addSystemMessage(db, conversation.id, "One person confirmed the handover. The other person must confirm from their own account.");
+      await createSystemMessage(conversation.id, "One person confirmed the handover. The other person must confirm from their own account.");
     }
     return res.status(200).json({ success: true, handover: result });
   } catch (error) {
@@ -577,7 +531,7 @@ export const disputeHandover = async (req, res) => {
       inArray(handoverRequestsTable.status, ["REQUESTED", "AWAITING_FINALIZATION"]),
     )).returning();
     if (!updated) return res.status(409).json({ message: "The handover is no longer active" });
-    await addSystemMessage(db, conversation.id, "A handover problem was reported. Completion is paused until the people involved resolve it.");
+    await createSystemMessage(conversation.id, "A handover problem was reported. Completion is paused until the people involved resolve it.");
     return res.status(200).json({ success: true, handover: updated });
   } catch (error) {
     console.error("Could not report handover issue:", error);
@@ -635,9 +589,9 @@ export const resolveHandoverDispute = async (req, res) => {
         eq(handoverRequestsTable.id, handover.id),
         eq(handoverRequestsTable.status, "DISPUTED"),
       )).returning();
-      await addSystemMessage(db, conversation.id, "Both people confirmed the handover issue was resolved. The handover has resumed with a new QR code; both people must confirm again after meeting.");
+      await createSystemMessage(conversation.id, "Both people confirmed the handover issue was resolved. The handover has resumed with a new QR code; both people must confirm again after meeting.");
     } else {
-      await addSystemMessage(db, conversation.id, (isClaimant ? "The owner" : "The finder") + " confirmed the handover issue is resolved. Waiting for the other person to agree before resuming.");
+      await createSystemMessage(conversation.id, (isClaimant ? "The owner" : "The finder") + " confirmed the handover issue is resolved. Waiting for the other person to agree before resuming.");
     }
     return res.status(200).json({ success: true, handover: result });
   } catch (error) {

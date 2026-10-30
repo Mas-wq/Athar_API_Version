@@ -140,25 +140,6 @@ export const claimQuestionSessionsTable = pgTable("claim_question_sessions", {
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const conversationMessagesTable = pgTable("conversation_messages", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  conversation_id: uuid("conversation_id").notNull().references(() => conversationsTable.id, { onDelete: "cascade" }),
-  sender_id: uuid("sender_id").references(() => usersTable.id, { onDelete: "set null" }),
-  sender_name: text("sender_name").notNull(),
-  message_type: text("message_type").notNull().default("USER"),
-  message: text("message").notNull(),
-  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-// Retained for compatibility with local chat history created by older versions.
-export const claimMessagesTable = pgTable("claim_messages", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  claim_id: uuid("claim_id").notNull().references(() => claimsTable.id, { onDelete: "cascade" }),
-  sender_id: uuid("sender_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
-  message: text("message").notNull(),
-  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const itemMatchesTable = pgTable("item_matches", {
   id: uuid("id").primaryKey().defaultRandom(),
   lost_report_id: uuid("lost_report_id").notNull().references(() => lostReportsTable.id, { onDelete: "cascade" }),

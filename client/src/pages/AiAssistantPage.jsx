@@ -6,8 +6,6 @@ import { useAuth } from "../context/auth.context";
 import { AccessCard } from "../components/ui";
 import { PageShell } from "../components/layout";
 
-const CHAT_CACHE_VERSION = "empty-after-reset-v1";
-
 const createStarterMessage = (fullName) => {
   const firstName = String(fullName || "").trim().split(/\s+/)[0];
   const greetingName = firstName || "there";
@@ -15,17 +13,6 @@ const createStarterMessage = (fullName) => {
     role: "assistant",
     content: `Hi ${greetingName}! I’m your personal assistant for finding lost items. I can check your reports and look for things that may match. How can I help?`,
   };
-};
-
-const readCachedMessages = (key) => {
-  try {
-    const messages = JSON.parse(localStorage.getItem(key) || "[]");
-    return Array.isArray(messages)
-      ? messages.filter((message) => message?.id && ["user", "assistant"].includes(message.role))
-      : [];
-  } catch {
-    return [];
-  }
 };
 
 const mergeMessages = (...groups) => {
@@ -45,31 +32,18 @@ const mergeMessages = (...groups) => {
 
 const AiAssistantPage = () => {
   const { isAuthenticated, user } = useAuth();
-  const storageKey = "athar-ai-chat-" + (user?.id || "guest");
+  const userKey = user?.id || "guest";
   const starterMessage = createStarterMessage(user?.full_name);
   const [messages, setMessages] = useState([starterMessage]);
   const [question, setQuestion] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [historyLoadedFor, setHistoryLoadedFor] = useState(null);
   const messagesContainerRef = useRef(null);
-  const previousStorageKeyRef = useRef(storageKey);
 
   useEffect(() => {
     let active = true;
-    const sameUser = previousStorageKeyRef.current === storageKey;
-    previousStorageKeyRef.current = storageKey;
-    const cacheVersionKey = storageKey + "-cache-version";
-    try {
-      if (localStorage.getItem(cacheVersionKey) !== CHAT_CACHE_VERSION) {
-        localStorage.removeItem(storageKey);
-        localStorage.setItem(cacheVersionKey, CHAT_CACHE_VERSION);
-      }
-    } catch {
-      // The server remains the primary history store if browser storage is unavailable.
-    }
-    const cachedMessages = isAuthenticated ? readCachedMessages(storageKey) : [];
-    if (cachedMessages.length) setMessages([starterMessage, ...cachedMessages]);
+    setMessages([starterMessage]);
+    setError("");
 
     const loadMatchAlerts = async () => {
       try {
@@ -77,7 +51,7 @@ const AiAssistantPage = () => {
         const alerts = Array.isArray(data.alerts) ? data.alerts : [];
         if (active && alerts.length) {
           setMessages((current) => {
-            const merged = mergeMessages(current, alerts);
+            const merged = mergeMessages(current.filter((message) => message.id), alerts);
             return merged.length ? [starterMessage, ...merged] : current;
           });
         }
@@ -98,13 +72,9 @@ const AiAssistantPage = () => {
         const alerts = alertsResult.status === "fulfilled" && Array.isArray(alertsResult.value.data.alerts)
           ? alertsResult.value.data.alerts
           : [];
-        setMessages((current) => {
-          const merged = mergeMessages(cachedMessages, history, alerts, sameUser ? current : []);
-          return [starterMessage, ...merged];
-        });
-        setHistoryLoadedFor(storageKey);
+        setMessages([starterMessage, ...mergeMessages(history, alerts)]);
         if (historyResult.status === "rejected") {
-          setError(historyResult.reason.response?.data?.message || "Could not load your saved Athar AI chat.");
+          setError(historyResult.reason.response?.data?.message || "Could not load your temporary Athar AI chat.");
         }
       });
       const timer = window.setInterval(loadMatchAlerts, 15000);
@@ -114,22 +84,8 @@ const AiAssistantPage = () => {
       };
     }
 
-    setHistoryLoadedFor(null);
-    setMessages([starterMessage]);
     return () => { active = false; };
-  }, [storageKey, isAuthenticated, starterMessage.content]);
-
-  useEffect(() => {
-    if (!isAuthenticated || historyLoadedFor !== storageKey) return;
-    const savedMessages = messages
-      .filter((message) => message.id && message.status !== "sending")
-      .slice(-100);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(savedMessages));
-    } catch {
-      // The server remains the primary history store if browser storage is unavailable.
-    }
-  }, [messages, storageKey, isAuthenticated, historyLoadedFor]);
+  }, [userKey, isAuthenticated, starterMessage.content]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -158,7 +114,7 @@ const AiAssistantPage = () => {
         ? { ...message, status: "failed" }
         : message));
       const message = requestError.response?.data?.message || "Athar AI is not available right now.";
-      setError(`${message} Your message is still saved here. Use Retry below.`);
+      setError(`${message} Your message was not saved. Use Retry below.`);
     } finally {
       setSending(false);
     }
@@ -192,7 +148,7 @@ const AiAssistantPage = () => {
             {messages.map((message, index) => (
               <div key={message.id || (index + "-" + message.role)} className={"max-w-3xl rounded-2xl px-4 py-3 " + (message.role === "user" ? "ms-auto bg-gradient-to-br from-emerald-600 to-teal-700 text-white" : "border border-white/10 bg-white/[0.04] text-slate-100")}>
                 <p dir="auto" className="whitespace-pre-wrap text-sm leading-6">{message.content}</p>
-                {message.role === "user" && message.status === "failed" && <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/20 pt-2 text-xs"><span className="text-white/80">Reply failed. Your message is saved.</span><button type="button" disabled={sending} onClick={() => retryMessage(message)} className="rounded-lg bg-white/15 px-2.5 py-1 font-semibold text-white hover:bg-white/25 disabled:opacity-50">Retry</button></div>}
+                {message.role === "user" && message.status === "failed" && <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/20 pt-2 text-xs"><span className="text-white/80">Reply failed. This message was not saved.</span><button type="button" disabled={sending} onClick={() => retryMessage(message)} className="rounded-lg bg-white/15 px-2.5 py-1 font-semibold text-white hover:bg-white/25 disabled:opacity-50">Retry</button></div>}
                 {message.hint && <p className="mt-1 text-xs text-slate-500">{message.hint}</p>}
                 {message.matches?.length > 0 && <div className="mt-3 space-y-2">
                   {message.matches.map((match) => <Link key={(match.report_number || "report") + "-" + match.found_item_id + "-" + match.url} to={match.url} className="flex flex-col gap-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 transition hover:border-emerald-400/40 sm:flex-row sm:items-start sm:justify-between">
@@ -210,7 +166,7 @@ const AiAssistantPage = () => {
             <button disabled={sending || !question.trim()} type="submit" aria-label="Send message" className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"><Send size={17} /><span className="hidden sm:inline">Send</span></button>
           </form>
         </section>
-        <p className="mt-3 text-xs text-slate-500">Your Athar AI chat and match alerts are saved to your account and available across browsers.</p>
+        <p className="mt-3 text-xs text-slate-500">Your recent Athar AI chat and match alerts stay available temporarily and clear after 7 days without activity.</p>
       </div>
     </PageShell>
   );

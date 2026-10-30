@@ -7,6 +7,7 @@ import { useAuth } from "../context/auth.context";
 import { AccessCard, LoadingState } from "../components/ui";
 import { PageShell } from "../components/layout";
 import { QRCodeSVG } from "qrcode.react";
+import { createChatSocket } from "../lib/socket";
 
 const ClaimChatPage = () => {
   const { id } = useParams();
@@ -19,6 +20,7 @@ const ClaimChatPage = () => {
   const [meetingAt, setMeetingAt] = useState("");
   const [confirmationCode, setConfirmationCode] = useState("");
   const bottomRef = useRef(null);
+  const socketRef = useRef(null);
 
   const fetchChat = useCallback(async (showError = false) => {
     try {
@@ -37,8 +39,22 @@ const ClaimChatPage = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchChat(true);
-    const timer = window.setInterval(() => fetchChat(false), 5000);
-    return () => window.clearInterval(timer);
+    const socket = createChatSocket();
+    socketRef.current = socket;
+    socket.on("connect", () => {
+      socket.emit("chat:join", { conversationId: id }, (result) => {
+        if (result?.success) fetchChat(false);
+      });
+    });
+    socket.on("chat:message", (event) => {
+      if (String(event?.conversationId) !== String(id)) return;
+      fetchChat(false);
+      window.dispatchEvent(new Event("athar:unread-refresh"));
+    });
+    return () => {
+      socketRef.current = null;
+      socket.disconnect();
+    };
   }, [fetchChat, isAuthenticated]);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -50,10 +66,18 @@ const ClaimChatPage = () => {
     if (!message || busy) return;
     setBusy(true);
     try {
-      await api.post(`/chat/conversations/${id}/messages`, { message });
+      const socket = socketRef.current;
+      if (!socket?.connected) throw new Error("Live chat is reconnecting. Please try again shortly.");
+      await new Promise((resolve, reject) => {
+        socket.timeout(10000).emit("chat:send", { conversationId: id, message }, (timeoutError, response) => {
+          if (timeoutError) return reject(new Error("Live chat timed out. Please try again."));
+          if (!response?.success) return reject(new Error(response?.message || "Could not send your message"));
+          return resolve(response.message);
+        });
+      });
       setDraft("");
       await fetchChat();
-    } catch (error) { toast.error(error.response?.data?.message || "Could not send your message"); }
+    } catch (error) { toast.error(error.response?.data?.message || error.message || "Could not send your message"); }
     finally { setBusy(false); }
   };
 

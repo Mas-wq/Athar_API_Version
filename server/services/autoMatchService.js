@@ -1,13 +1,14 @@
 import { db } from "../src/index.js";
+import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   foundItemsTable,
   lostReportsTable,
   itemMatchesTable,
-  aiAssistantMessagesTable,
   conversationsTable,
 } from "../src/models/index.js";
 import { getMatchScore } from "./matchingService.js";
+import { appendAiChatMessages } from "../src/services/chatStore.js";
 
 const normalizeText = (text) => {
   if (!text) return "";
@@ -124,6 +125,7 @@ const scoreAndStoreMatch = async (report, foundItem) => {
     similarityReason("Location", locScore),
   ];
 
+  let matchAlert = null;
   const inserted = await db.transaction(async (tx) => {
     const [saved] = await tx.insert(itemMatchesTable)
       .values({
@@ -146,13 +148,14 @@ const scoreAndStoreMatch = async (report, foundItem) => {
         match_reasons: matchReasons,
         url: foundPostUrl,
       };
-      await tx.insert(aiAssistantMessagesTable).values({
-        user_id: report.user_id,
+      matchAlert = {
+        id: randomUUID(),
         role: "assistant",
         content: `I found a possible match for your lost report #${reportNumber}. Match score: ${combinedScore}%. Review the match details below.`,
         matches: [matchCard],
         mode: "match_alert",
-      });
+        created_at: new Date().toISOString(),
+      };
     }
 
     await tx.update(conversationsTable)
@@ -163,6 +166,14 @@ const scoreAndStoreMatch = async (report, foundItem) => {
       ));
     return saved;
   });
+
+  if (matchAlert) {
+    try {
+      await appendAiChatMessages(report.user_id, [matchAlert]);
+    } catch (error) {
+      console.error("Could not save the temporary Athar AI match alert:", error.message);
+    }
+  }
 
   return {
     match_id: inserted.id,

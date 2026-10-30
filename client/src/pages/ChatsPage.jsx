@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { useAuth } from "../context/auth.context";
 import { AccessCard, EmptyState, LoadingState } from "../components/ui";
 import { PageShell } from "../components/layout";
+import { createChatSocket } from "../lib/socket";
 
 const ChatsPage = () => {
   const { isAuthenticated } = useAuth();
@@ -18,8 +19,9 @@ const ChatsPage = () => {
       .catch(() => { if (mounted) setChats([]); })
       .finally(() => { if (mounted) setLoading(false); });
     loadChats();
-    const timer = window.setInterval(loadChats, 5000);
-    return () => { mounted = false; window.clearInterval(timer); };
+    const socket = createChatSocket();
+    socket.on("chat:message", loadChats);
+    return () => { mounted = false; socket.disconnect(); };
   }, [isAuthenticated]);
 
   if (!isAuthenticated) return <AccessCard icon={MessageCircle} title="Sign in to view your chats" description="Claim conversations appear here after a claim is submitted." />;

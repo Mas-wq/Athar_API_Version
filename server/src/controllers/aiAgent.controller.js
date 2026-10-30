@@ -1,14 +1,13 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { db } from "../index.js";
 import {
-  aiAssistantMessagesTable,
-  conversationMessagesTable,
-  conversationsTable,
   foundItemsTable,
   itemMatchesTable,
   lostReportsTable,
 } from "../models/index.js";
 import { generateAssistantReply, getMatchScore } from "../../services/matchingService.js";
+import { appendAiChatMessages, getAiChatMessages } from "../services/chatStore.js";
 
 const normalizeHistory = (history) => {
   if (!Array.isArray(history)) return [];
@@ -18,6 +17,16 @@ const normalizeHistory = (history) => {
     .map((turn) => ({ role: turn.role, content: String(turn.content || "").slice(0, 1200) }))
     .filter((turn) => turn.content);
 };
+
+const toClientMessage = (row) => ({
+  id: row.id,
+  role: row.role,
+  content: row.content,
+  matches: Array.isArray(row.matches) ? row.matches : [],
+  mode: row.mode || undefined,
+  hint: row.hint || undefined,
+  created_at: row.created_at,
+});
 
 const isMatchQuestion = (question) =>
   /\b(match(?:ing|es)?|find|found|lost|missing|looking for|possible match|score|percentage)\b|%|مطابق|مطابقة|تطابق|ماتش|مفقود|مفقودة|ضاع|ضاعت|فقدت|لقيت|بلاغ|نسبة|درجة/iu.test(question);
@@ -100,92 +109,16 @@ const hasInventedPercentage = (message, matches) => {
     .some(([, score]) => !knownScores.has(score));
 };
 
-const asDetailsObject = (details) => {
-  if (typeof details === "string") {
-    try { details = JSON.parse(details); } catch { return {}; }
-  }
-  return details && typeof details === "object" && !Array.isArray(details) ? details : {};
-};
-
-const detailLabel = (key) => {
-  const compact = String(key).toLowerCase().replace(/[^a-z0-9]/g, "");
-  const labels = {
-    brand: "Brand", manufacturer: "Brand", make: "Brand",
-    color: "Color", colour: "Color",
-    model: "Model", category: "Category", size: "Size", material: "Material",
-  };
-  return labels[compact] || null;
-};
-
-const normalizeDetail = (value) => String(value ?? "").trim().toLocaleLowerCase().replace(/\s+/g, " ");
-
-const getAlertMatchReasons = (message, row) => {
-  const reasonBlock = message.match(/Why it may match:\s*([\s\S]*?)(?:\n\s*Take a look:|$)/i)?.[1];
-  const savedReasons = reasonBlock
-    ? reasonBlock.split(/\r?\n/).map((line) => line.replace(/^\s*[•*-]\s*/, "").trim()).filter(Boolean)
-    : [];
-  if (savedReasons.length) return savedReasons;
-
-  const lostDetails = asDetailsObject(row.report_details);
-  const foundDetails = asDetailsObject(row.found_details);
-  const foundByLabel = new Map(Object.entries(foundDetails)
-    .map(([key, value]) => [detailLabel(key), value])
-    .filter(([label, value]) => label && normalizeDetail(value)));
-  const reasons = [];
-  const lostType = String(row.lost_item_type || "").trim();
-  const foundType = String(row.item_type || "").trim();
-  if (lostType && foundType) {
-    reasons.push(normalizeDetail(lostType) === normalizeDetail(foundType)
-      ? `Item type matches (${foundType}).`
-      : `Item types compared: ${lostType} and ${foundType}.`);
-  }
-
-  for (const [key, value] of Object.entries(lostDetails)) {
-    const label = detailLabel(key);
-    const foundValue = label ? foundByLabel.get(label) : null;
-    if (!label || !normalizeDetail(value) || !normalizeDetail(foundValue)) continue;
-    reasons.push(normalizeDetail(value) === normalizeDetail(foundValue)
-      ? `${label} matches (${String(value).trim()}).`
-      : `${label} differs (${String(value).trim()} vs. ${String(foundValue).trim()}).`);
-    if (reasons.length >= 4) break;
-  }
-
-  if (reasons.length === 0) reasons.push("No exact shared attributes were found in the saved details.");
-  reasons.push("The saved score used item type, public details, and location; its full breakdown was not saved.");
-  reasons.push("Photo comparison details are not available for this saved match.");
-  return reasons;
-};
-
-const cleanAlertMessage = (message) => message
-  .replace(/\n\s*Why it may match:[\s\S]*?(?=\n\s*Take a look:|$)/i, "")
-  .replace(/\n?\s*Take a look:\s*https?:\/\/\S+/i, "")
-  .replace(/https?:\/\/\S+/g, "")
-  .trim();
-
-const toClientMessage = (row) => ({
-  id: row.id,
-  role: row.role,
-  content: row.content,
-  matches: Array.isArray(row.matches) ? row.matches : [],
-  mode: row.mode || undefined,
-  hint: row.hint || undefined,
-  created_at: row.created_at,
-});
-
 export const getAiChatHistory = async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ message: "Sign in to view your Athar AI chat." });
 
   try {
-    const rows = await db.select().from(aiAssistantMessagesTable)
-      .where(eq(aiAssistantMessagesTable.user_id, userId))
-      .orderBy(desc(aiAssistantMessagesTable.created_at))
-      .limit(100);
-
-    return res.status(200).json({ messages: rows.reverse().map(toClientMessage) });
+    const messages = await getAiChatMessages(userId);
+    return res.status(200).json({ messages: messages.slice(-100) });
   } catch (error) {
     console.error("Could not load Athar AI chat history:", error);
-    return res.status(500).json({ message: "Could not load your saved Athar AI chat." });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Could not load your temporary Athar AI chat." });
   }
 };
 
@@ -201,7 +134,7 @@ export const chatWithAiAgent = async (req, res) => {
 
     // Only the caller's own reports and public found-item details are sent to Groq.
     // Hidden verification details and finder contact information stay in Node.
-    const [reports, foundItems, previousMessages, savedAlerts] = await Promise.all([
+    const [reports, foundItems, savedChatMessages] = await Promise.all([
       db.select({
         id: lostReportsTable.id,
         item_type: lostReportsTable.item_type,
@@ -230,19 +163,7 @@ export const chatWithAiAgent = async (req, res) => {
         .where(eq(foundItemsTable.status, "FOUND"))
         .orderBy(desc(foundItemsTable.created_at))
         .limit(100),
-      db.select({ role: aiAssistantMessagesTable.role, content: aiAssistantMessagesTable.content })
-        .from(aiAssistantMessagesTable)
-        .where(eq(aiAssistantMessagesTable.user_id, userId))
-        .orderBy(desc(aiAssistantMessagesTable.created_at))
-        .limit(8),
-      db.select({ matches: aiAssistantMessagesTable.matches })
-        .from(aiAssistantMessagesTable)
-        .where(and(
-          eq(aiAssistantMessagesTable.user_id, userId),
-          eq(aiAssistantMessagesTable.mode, "match_alert"),
-        ))
-        .orderBy(desc(aiAssistantMessagesTable.created_at))
-        .limit(100),
+      getAiChatMessages(userId),
     ]);
 
     const savedMatchRows = reports.length
@@ -269,7 +190,7 @@ export const chatWithAiAgent = async (req, res) => {
         match_reasons: null,
       },
     ]));
-    for (const alert of savedAlerts) {
+    for (const alert of savedChatMessages.filter((message) => message.mode === "match_alert")) {
       for (const match of Array.isArray(alert.matches) ? alert.matches : []) {
         const reportId = reportIdByNumber.get(String(match.report_number || "").toUpperCase());
         const foundItemId = match.found_item_id;
@@ -389,7 +310,9 @@ export const chatWithAiAgent = async (req, res) => {
       matches = evaluated.filter(Boolean).sort((a, b) => b.match_percentage - a.match_percentage).slice(0, 8);
     }
 
-    const history = normalizeHistory(previousMessages.reverse());
+    const history = normalizeHistory(savedChatMessages
+      .filter((message) => ["user", "assistant"].includes(message.role) && message.mode !== "match_alert")
+      .slice(-8));
     const scoreOnlyReply = isScoreQuestion(question);
     const noReportsReply = isMatchQuestion(question) && reportsToSearch.length === 0;
     let assistantContent;
@@ -441,23 +364,16 @@ export const chatWithAiAgent = async (req, res) => {
       mode: usedGroq ? "groq_agent" : "athar_agent",
       agent_model: usedGroq ? process.env.GROQ_CHAT_MODEL?.trim() || "allam-2-7b" : "Athar rules",
     };
-    const [userMessage, assistantMessage] = await db.transaction(async (tx) => {
-      const [savedUserMessage] = await tx.insert(aiAssistantMessagesTable).values({
-        user_id: userId,
-        role: "user",
-        content: question,
-        matches: [],
-      }).returning();
-      const [savedAssistantMessage] = await tx.insert(aiAssistantMessagesTable).values({
-        user_id: userId,
-        role: "assistant",
-        content: assistantContent,
-        matches: result.matches,
-        mode: result.mode,
-        hint: null,
-      }).returning();
-      return [savedUserMessage, savedAssistantMessage];
-    });
+    const now = new Date().toISOString();
+    const userMessage = {
+      id: randomUUID(), role: "user", content: question, matches: [], created_at: now,
+    };
+    const assistantMessage = {
+      id: randomUUID(), role: "assistant", content: assistantContent,
+      matches: result.matches, mode: result.mode, hint: null,
+      created_at: new Date().toISOString(),
+    };
+    await appendAiChatMessages(userId, [userMessage, assistantMessage]);
 
     return res.status(200).json({
       ...result,
@@ -477,7 +393,9 @@ export const chatWithAiAgent = async (req, res) => {
     const rejectedKey = error.code === "GROQ_INVALID_API_KEY"
       ? `Groq rejected the ${error.purpose === "chat" ? "chat" : "verification"} API key. Check that it is active and copied from the correct Groq project.`
       : null;
-    const message = missingKey || rejectedKey
+    const message = error.statusCode === 503 && errorText.includes("Chat storage")
+      ? error.message
+      : missingKey || rejectedKey
       || (status === 429
         ? "Groq's request limit was reached. Wait a little and try again."
         : status === 504
@@ -496,68 +414,13 @@ export const getAiMatchAlerts = async (req, res) => {
   if (!userId) return res.status(401).json({ message: "Sign in to view Athar AI alerts." });
 
   try {
-    const savedRows = await db.select().from(aiAssistantMessagesTable)
-      .where(and(
-        eq(aiAssistantMessagesTable.user_id, userId),
-        eq(aiAssistantMessagesTable.role, "assistant"),
-      ))
-      .orderBy(desc(aiAssistantMessagesTable.created_at))
-      .limit(100);
-    const savedAlerts = savedRows
-      .filter((row) => row.mode === "match_alert" && Array.isArray(row.matches) && row.matches.length > 0)
-      .map(toClientMessage);
-
-    // Keep previously created alerts available in Athar AI, but never place them in the Chats inbox.
-    const legacyRows = await db
-      .select({
-        id: conversationMessagesTable.id,
-        message: conversationMessagesTable.message,
-        created_at: conversationMessagesTable.created_at,
-        report_id: lostReportsTable.id,
-        lost_item_type: lostReportsTable.item_type,
-        report_details: lostReportsTable.report_details,
-        found_item_id: foundItemsTable.id,
-        item_type: foundItemsTable.item_type,
-        found_details: foundItemsTable.public_details,
-        location: foundItemsTable.location_found,
-        match_percentage: conversationsTable.match_percentage,
-      })
-      .from(conversationMessagesTable)
-      .innerJoin(conversationsTable, eq(conversationMessagesTable.conversation_id, conversationsTable.id))
-      .innerJoin(lostReportsTable, eq(conversationsTable.lost_report_id, lostReportsTable.id))
-      .innerJoin(foundItemsTable, eq(conversationsTable.found_item_id, foundItemsTable.id))
-      .where(and(
-        eq(conversationsTable.claimant_id, userId),
-        eq(conversationMessagesTable.sender_name, "Athar AI Assistant"),
-        eq(conversationMessagesTable.message_type, "AI_ASSISTANT"),
-      ))
-      .orderBy(asc(conversationMessagesTable.created_at))
-      .limit(100);
-
-    const legacyAlerts = legacyRows
-      .filter((row) => typeof row.message === "string" && row.message.includes("/found-items?item="))
-      .map((row) => ({
-        id: row.id,
-        role: "assistant",
-        content: cleanAlertMessage(row.message),
-        created_at: row.created_at,
-        matches: [{
-          report_number: `ATH-${String(row.report_id).slice(0, 8).toUpperCase()}`,
-          found_item_id: row.found_item_id,
-          item_type: row.item_type,
-          location: row.location,
-          match_percentage: row.match_percentage,
-          match_reasons: getAlertMatchReasons(row.message, row),
-          url: `/found-items?item=${encodeURIComponent(row.found_item_id)}`,
-        }],
-      }));
-
-    const uniqueAlerts = [...savedAlerts, ...legacyAlerts]
-      .filter((alert, index, all) => all.findIndex((candidate) => candidate.id === alert.id) === index)
+    const savedMessages = await getAiChatMessages(userId);
+    const uniqueAlerts = savedMessages
+      .filter((row) => row.role === "assistant" && row.mode === "match_alert" && Array.isArray(row.matches) && row.matches.length > 0)
       .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     return res.status(200).json({ alerts: uniqueAlerts });
   } catch (error) {
     console.error("Could not load Athar AI match alerts:", error);
-    return res.status(500).json({ message: "Could not load Athar AI alerts." });
+    return res.status(error.statusCode || 500).json({ message: error.message || "Could not load Athar AI alerts." });
   }
 };

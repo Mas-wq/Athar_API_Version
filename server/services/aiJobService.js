@@ -3,13 +3,13 @@ import { db } from "../src/index.js";
 import {
   aiProcessingJobsTable,
   claimsTable,
-  conversationMessagesTable,
   conversationsTable,
   foundItemsTable,
   lostReportsTable,
 } from "../src/models/index.js";
 import { runAutoMatch, runAutoMatchForLostReport, runAutoMatchPair } from "./autoMatchService.js";
 import { getMatchScore } from "./matchingService.js";
+import { createSystemMessage } from "../src/services/conversationMessage.service.js";
 
 const MAX_ATTEMPTS = 5;
 let isPumping = false;
@@ -92,6 +92,7 @@ const completeClaimVerification = async (claimId) => {
     ? Math.round(comparison.percentage * 0.75 + comparison.visual_percentage * 0.25)
     : comparison.percentage;
 
+  let saved = false;
   await db.transaction(async (tx) => {
     const [current] = await tx.select().from(claimsTable).where(eq(claimsTable.id, claim.id)).limit(1);
     if (!current || current.claim_details?.ai_review?.status === "COMPLETED") return;
@@ -112,19 +113,16 @@ const completeClaimVerification = async (claimId) => {
       match_percentage: score,
       updated_at: new Date(),
     }).where(eq(claimsTable.id, current.id));
-    if (current.conversation_id) {
-      await tx.insert(conversationMessagesTable).values({
-        conversation_id: current.conversation_id,
-        sender_id: null,
-        sender_name: "Athar AI Assistant",
-        message_type: "SYSTEM",
-        message: `Athar AI completed the ownership evidence check: ${score}%. This is a similarity score; the finder makes the final decision.`,
-      });
-    }
+    saved = true;
   });
+  if (saved && claim.conversation_id) {
+    await createSystemMessage(claim.conversation_id, `Athar AI completed the ownership evidence check: ${score}%. This is a similarity score; the finder makes the final decision.`);
+  }
 };
 
 const markClaimVerificationFailed = async (claimId, errorMessage) => {
+  let failed = false;
+  let conversationId = null;
   await db.transaction(async (tx) => {
     const [claim] = await tx.select().from(claimsTable).where(eq(claimsTable.id, claimId)).limit(1);
     if (!claim || claim.claim_details?.ai_review?.status === "COMPLETED") return;
@@ -135,16 +133,12 @@ const markClaimVerificationFailed = async (claimId, errorMessage) => {
       },
       updated_at: new Date(),
     }).where(eq(claimsTable.id, claim.id));
-    if (claim.conversation_id) {
-      await tx.insert(conversationMessagesTable).values({
-        conversation_id: claim.conversation_id,
-        sender_id: null,
-        sender_name: "Athar AI Assistant",
-        message_type: "SYSTEM",
-        message: "Athar AI could not calculate the ownership evidence score. The claim is saved and the finder can still review it.",
-      });
-    }
+    failed = true;
+    conversationId = claim.conversation_id;
   });
+  if (failed && conversationId) {
+    await createSystemMessage(conversationId, "Athar AI could not calculate the ownership evidence score. The claim is saved and the finder can still review it.");
+  }
   console.error("Ownership verification job failed permanently:", errorMessage);
 };
 
