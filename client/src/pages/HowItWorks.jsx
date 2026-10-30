@@ -9,7 +9,6 @@ import {
   Cpu,
   ShieldCheck,
   ArrowRightLeft,
-  Gavel,
 } from "lucide-react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
@@ -117,12 +116,6 @@ const HowItWorks = () => {
               color="blue"
             />
           </div>
-        </section>
-
-        <section className="mb-16 rounded-3xl border border-cyan-500/20 bg-cyan-950/20 p-7 md:p-10">
-          <div className="mb-5 flex items-center gap-3"><Gavel className="text-cyan-300" /><h2 className="text-2xl font-semibold text-white">Auctions for unclaimed items</h2></div>
-          <p className="max-w-4xl text-sm leading-7 text-slate-300">If a found item has no active claim after the configured waiting period, the finder receives a notice before it may be listed. Sensitive item types are excluded. Verified active users can place binding bids, while the real owner can still submit a claim. The winner arranges pickup in chat and pays cash in person; there is no online payment. A winner who misses the collection deadline receives a strike.</p>
-          <Link to="/auctions" className="mt-5 inline-flex rounded-xl border border-cyan-300/30 px-4 py-2.5 text-sm font-bold text-cyan-200 hover:bg-cyan-300/10">Browse auctions</Link>
         </section>
 
         <section className="mb-16 rounded-3xl border border-cyan-500/20 bg-cyan-950/20 p-7 md:p-10">

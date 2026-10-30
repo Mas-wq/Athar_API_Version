@@ -1,21 +1,16 @@
-import { and, count, eq, gte, inArray, sum } from "drizzle-orm";
+import { and, count, eq, gte, inArray } from "drizzle-orm";
 import { db } from "../index.js";
-import { auctionsTable, claimsTable, foundItemsTable, lostReportsTable, usersTable } from "../models/index.js";
+import { claimsTable, foundItemsTable, lostReportsTable, usersTable } from "../models/index.js";
 import { isGroqConfigured } from "../../services/matchingService.js";
 
 export const getDashboardStats = async (_req, res) => {
   try {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const [[reports], [delivered], [approvedThisWeek], [claims], [activeAuctions], [soldAuctions], [collectedItems], [unsoldAuctions], [winningAmount]] = await Promise.all([
+    const [[reports], [delivered], [approvedThisWeek], [claims]] = await Promise.all([
       db.select({ value: count() }).from(lostReportsTable),
       db.select({ value: count() }).from(foundItemsTable).where(eq(foundItemsTable.status, "RETURNED")),
       db.select({ value: count() }).from(claimsTable).where(and(inArray(claimsTable.status, ["APPROVED", "COLLECTED"]), gte(claimsTable.approved_at, weekAgo))),
       db.select({ value: count() }).from(claimsTable).where(inArray(claimsTable.status, ["APPROVED", "COLLECTED"])),
-      db.select({ value: count() }).from(auctionsTable).where(inArray(auctionsTable.status, ["OPEN", "AWAITING_PICKUP"])),
-      db.select({ value: count() }).from(auctionsTable).where(inArray(auctionsTable.status, ["AWAITING_PICKUP", "SOLD"])),
-      db.select({ value: count() }).from(foundItemsTable).where(eq(foundItemsTable.status, "SOLD")),
-      db.select({ value: count() }).from(auctionsTable).where(eq(auctionsTable.status, "UNSOLD")),
-      db.select({ value: sum(auctionsTable.final_price) }).from(auctionsTable).where(inArray(auctionsTable.status, ["AWAITING_PICKUP", "SOLD"])),
     ]);
     const chatConfigured = isGroqConfigured("chat");
     const verificationConfigured = isGroqConfigured("verification");
@@ -43,11 +38,6 @@ export const getDashboardStats = async (_req, res) => {
       delivered_items: Number(delivered.value),
       claims_approved_last_7_days: Number(approvedThisWeek.value),
       claims_approved_total: Number(claims.value),
-      active_auctions: Number(activeAuctions.value),
-      items_sold: Number(soldAuctions.value),
-      items_collected: Number(collectedItems.value),
-      unsold_items: Number(unsoldAuctions.value),
-      total_winning_amount: Number(winningAmount.value || 0),
     } });
   } catch (error) {
     console.error("Could not load admin dashboard:", error);
@@ -63,8 +53,6 @@ export const getAllUsers = async (_req, res) => {
       full_name: usersTable.full_name,
       email_verified: usersTable.email_verified,
       is_active: usersTable.is_active,
-      bid_strikes: usersTable.bid_strikes,
-      bidding_banned: usersTable.bidding_banned,
       created_at: usersTable.created_at,
     }).from(usersTable).where(eq(usersTable.role, "USER")).orderBy(usersTable.created_at);
     return res.status(200).json({ users });

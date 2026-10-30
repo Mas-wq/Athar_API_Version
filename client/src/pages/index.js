@@ -23,10 +23,6 @@ import ClaimChatPage from "./ClaimChatPage";
 import ChatsPage from "./ChatsPage";
 import AdminDashboardPage from "./AdminDashboardPage";
 import AiAssistantPage from "./AiAssistantPage";
-import AuctionsPage from "./AuctionsPage";
-import AuctionDetailsPage from "./AuctionDetailsPage";
-import MyBidsPage from "./MyBidsPage";
-import AdminAuctionsPage from "./AdminAuctionsPage";
 
 export {
   AboutPage,
@@ -54,8 +50,4 @@ export {
   ChatsPage,
   AdminDashboardPage,
   AiAssistantPage,
-  AuctionsPage,
-  AuctionDetailsPage,
-  MyBidsPage,
-  AdminAuctionsPage,
 };

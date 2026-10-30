@@ -87,7 +87,6 @@ const NotificationBell = () => {
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => { setOpen(false); navigate("/my-bids"); }} className="w-full px-4 py-3 text-center text-xs font-bold text-emerald-300 hover:bg-white/[0.04]">View my bids</button>
         </section>
       </>}
     </div>

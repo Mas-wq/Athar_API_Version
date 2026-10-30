@@ -7,8 +7,6 @@ import {
 
 import {
   foundItemStatusEnum,
-  auctionStatusEnum,
-  bidStatusEnum,
   claimStatusEnum,
   lostReportStatusEnum,
   foundItemsTable,
@@ -23,9 +21,6 @@ import {
   conversationsTable,
   conversationMessagesTable,
   handoverRequestsTable,
-  auctionSettingsTable,
-  auctionsTable,
-  bidsTable,
   notificationsTable,
 } from "./item.model.js";
 
@@ -38,8 +33,6 @@ export {
   passwordResetTable,
   userRoleEnum,
   foundItemStatusEnum,
-  auctionStatusEnum,
-  bidStatusEnum,
   claimStatusEnum,
   lostReportStatusEnum,
   foundItemsTable,
@@ -54,9 +47,6 @@ export {
   conversationsTable,
   conversationMessagesTable,
   handoverRequestsTable,
-  auctionSettingsTable,
-  auctionsTable,
-  bidsTable,
   notificationsTable,
   aiAssistantMessagesTable,
   aiProcessingJobsTable,

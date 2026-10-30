@@ -19,30 +19,17 @@ import {
 } from "../controllers/foundItem.controller.js";
 import { chatWithAiAgent, getAiChatHistory, getAiMatchAlerts } from "../controllers/aiAgent.controller.js";
 import { strictRoleAuthorization } from "../middlewares/roleAuth.middleware.js";
-import { finderWithdraw } from "../../services/auctionService.js";
 import {
-  getMyBids,
   getMyNotifications,
   getUnreadNotificationCount,
   readMyNotifications,
-  submitBid,
-} from "../controllers/auction.controller.js";
+} from "../controllers/notifications.controller.js";
 
 const router = express.Router();
 
-router.post("/auctions/:id/bids", strictRoleAuthorization("USER"), submitBid);
-router.get("/bids", strictRoleAuthorization("USER"), getMyBids);
 router.get("/notifications", strictRoleAuthorization("USER"), getMyNotifications);
 router.post("/notifications/read", strictRoleAuthorization("USER"), readMyNotifications);
 router.get("/notifications/unread-count", strictRoleAuthorization("USER"), getUnreadNotificationCount);
-router.post("/found-items/:id/auction/withdraw", strictRoleAuthorization("USER"), async (req, res) => {
-  try {
-    await finderWithdraw(req.params.id, req.user.id);
-    return res.status(200).json({ success: true, message: "This item will not enter an auction" });
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({ message: error.message || "Could not remove item from auction" });
-  }
-});
 
 router.get("/ai/matches", getAiMatchAlerts);
 router.get("/ai/chat-history", getAiChatHistory);

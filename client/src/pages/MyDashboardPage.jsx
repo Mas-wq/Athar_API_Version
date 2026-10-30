@@ -17,8 +17,6 @@ import {
   History,
   ShieldCheck,
   MessageCircle,
-  Gavel,
-  XCircle,
 } from "lucide-react";
 import { api } from "../lib/api";
 import { toast } from "react-toastify";
@@ -44,7 +42,6 @@ const MyDashboardPage = () => {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [withdrawingAuctionId, setWithdrawingAuctionId] = useState(null);
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -130,22 +127,6 @@ const MyDashboardPage = () => {
     } finally {
       setIsDeleting(null);
       setItemToDelete(null);
-    }
-  };
-
-  const withdrawFromAuction = async (itemId) => {
-    if (withdrawingAuctionId) return;
-    setWithdrawingAuctionId(itemId);
-    try {
-      await api.post(`/user/found-items/${itemId}/auction/withdraw`);
-      setFoundItems((items) => items.map((item) => item.id === itemId
-        ? { ...item, auction_notice_at: null, auction_opt_out: true }
-        : item));
-      toast.success("This item will not enter an auction", { theme: "dark" });
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Could not remove this item from the auction", { theme: "dark" });
-    } finally {
-      setWithdrawingAuctionId(null);
     }
   };
 
@@ -298,12 +279,6 @@ const MyDashboardPage = () => {
             ) : (
               foundItems.map((item) => (
                 <div key={item.id} className="space-y-3">
-                  {item.auction_notice_at && item.status === "FOUND" && (
-                    <div className="flex flex-col gap-3 rounded-2xl border border-amber-400/25 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-start gap-3"><AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-300" /><div><p className="font-bold text-amber-100">Auction notice for this item</p><p className="mt-1 text-sm text-amber-100/70">It may enter an auction soon. You can remove it while it is still in this notice period.</p></div></div>
-                      <button type="button" disabled={withdrawingAuctionId === item.id} onClick={() => withdrawFromAuction(item.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-300/30 px-4 py-2 text-sm font-bold text-amber-100 hover:bg-amber-300/10 disabled:opacity-50"><XCircle size={16} />{withdrawingAuctionId === item.id ? "Removing…" : "Remove from auction"}</button>
-                    </div>
-                  )}
                   <DashboardCard
                     title={item.item_type}
                     status={item.status}
@@ -319,7 +294,6 @@ const MyDashboardPage = () => {
                         }),
                       },
                       { label: "Post ID", value: `#${item.id.slice(0, 8).toUpperCase()}`, mono: true },
-                      ...(item.status === "IN_AUCTION" ? [{ label: "Current bid", value: `${item.auction_current_price || "No bids yet"}${item.auction_current_price ? " EGP" : ""}`, highlight: true }] : []),
                     ]}
                     actions={[
                       {
@@ -328,12 +302,6 @@ const MyDashboardPage = () => {
                         onClick: () => navigate(`/found-items?item=${item.id}`),
                         color: "emerald",
                       },
-                      ...(item.status === "IN_AUCTION" && item.auction_id ? [{
-                        icon: <Gavel size={18} />,
-                        label: "View auction",
-                        onClick: () => navigate(`/auctions/${item.auction_id}`),
-                        color: "blue",
-                      }] : []),
                       ...(item.status === "FOUND" ? [{
                         icon: <Trash2 size={18} />,
                         label: "Delete item",

@@ -1,29 +1,6 @@
 import { db } from "../index.js";
-import { auctionsTable, foundItemsTable, lostReportsTable } from "../models/index.js";
-import { and, desc, eq, inArray } from "drizzle-orm";
-
-const addAuctionInfo = async (items) => {
-  const itemIds = items.filter((item) => item.status === "IN_AUCTION").map((item) => item.id);
-  if (!itemIds.length) return items;
-  const auctions = await db.select({
-    id: auctionsTable.id,
-    found_item_id: auctionsTable.found_item_id,
-    start_price: auctionsTable.start_price,
-    current_price: auctionsTable.current_price,
-  }).from(auctionsTable).where(and(
-    inArray(auctionsTable.found_item_id, itemIds),
-    inArray(auctionsTable.status, ["OPEN", "AWAITING_PICKUP"]),
-  ));
-  const byItem = new Map(auctions.map((auction) => [auction.found_item_id, auction]));
-  return items.map((item) => {
-    const auction = byItem.get(item.id);
-    return auction ? {
-      ...item,
-      auction_id: auction.id,
-      auction_current_price: Number(auction.current_price) || auction.start_price,
-    } : item;
-  });
-};
+import { foundItemsTable, lostReportsTable } from "../models/index.js";
+import { desc, eq, inArray } from "drizzle-orm";
 
 export const getAllFoundItems = async (req, res) => {
   try {
@@ -53,11 +30,10 @@ export const getAllFoundItems = async (req, res) => {
           created_at: foundItemsTable.created_at,
         })
         .from(foundItemsTable)
-        .where(inArray(foundItemsTable.status, ["FOUND", "CLAIMED", "RETURNED", "IN_AUCTION", "SOLD", "UNCLAIMED"]))
+        .where(inArray(foundItemsTable.status, ["FOUND", "CLAIMED", "RETURNED", "ARCHIVED"]))
         .orderBy(desc(foundItemsTable.created_at));
     }
 
-    items = await addAuctionInfo(items);
     return res.status(200).json({
       success: true,
       count: items.length,
@@ -132,8 +108,6 @@ export const getFoundItemById = async (req, res) => {
     if (!foundItem) {
       return res.status(404).json({ message: "Found item not found" });
     }
-
-    [foundItem] = await addAuctionInfo([foundItem]);
 
     return res.status(200).json({ success: true, data: foundItem });
   } catch (error) {

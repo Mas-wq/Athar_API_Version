@@ -24,7 +24,6 @@ The project uses a React frontend, a Node.js/Express API, PostgreSQL with Drizzl
 - Ask Athar AI about reports and possible matches in Arabic or English.
 - Submit an ownership claim by answering AI-generated questions.
 - Message the other person and coordinate a handover.
-- Browse public auctions for eligible found items, place binding bids, and arrange cash payment at pickup.
 
 ## Roles and capabilities
 
@@ -38,8 +37,6 @@ A regular account can take part in the community as either a person who lost an 
 - Submit an ownership claim and answer questions prepared from the found-item photo.
 - Share supporting photos or receipts with a claim.
 - Continue the claim conversation, respond to a decision, and confirm or dispute a handover.
-- Bid on eligible auctions, track leading and outbid states, and receive auction notifications.
-- Claim an item while it is in an auction. If the finder accepts the real owner's claim, the auction is cancelled.
 
 The finder reviews the claimant's answers and makes the final claim decision. AI scores and match suggestions are supporting information only.
 
@@ -52,21 +49,8 @@ An administrator has a separate, server-protected role. The admin area lets them
 - View registered user accounts and their activation and email-verification status.
 - Activate or deactivate regular user accounts.
 - Open the reports area to browse community reports.
-- Change auction timing and bidding settings, set an optional reserve on an individual auction, review bidder details, cancel auctions, and manage bidding strikes or bans.
 
-Claim ownership decisions remain with the finder. A real owner keeps priority: an accepted claim cancels the item's auction.
-
-## Auctions
-
-Found items with no active claim or claim conversation can enter an auction after the configured waiting period. The finder receives a notice first and can opt out before bidding begins. Items in excluded categories are skipped. A claim submitted during an auction is still reviewed normally; an accepted claim cancels that auction.
-
-Bids use whole Egyptian pounds. They are binding and cannot be withdrawn. The winner arranges a public pickup with the finder and pays cash at pickup; the application does not collect online payments or charge a platform fee. Winners who miss the collection deadline forfeit their winning bid and receive a strike. Administrators can lift a bidding ban or adjust strikes.
-
-Auction rules are stored in the single `auction_settings` row and can be changed in the admin auction page. Durations are stored as minutes and the page also shows day/hour equivalents. Settings are copied into each new auction, so active auctions keep their original duration, increment, pickup deadline, and anti-sniping behavior. The reserve price is optional and is set separately on each open auction; it is visible only to administrators.
-
-The default rules are a 30-day waiting period, 3-day finder notice, 7-day auction, 10-minute anti-sniping extension, 50 EGP start price, 10 EGP minimum increment, 72-hour pickup deadline, and a 3-strike bidding limit. If an auction has no qualified sale, it is relisted once at 50% of its previous start price (minimum 10 EGP). If the second auction also has no sale, the found item is marked unclaimed.
-
-Background jobs check eligibility and send finder notices hourly. Every minute, the server closes ended auctions, handles missed pickups, finalizes completed handovers, and sends one-time ending-soon notifications. These decisions use the server clock; the browser countdown is informational.
+Claim ownership decisions remain with the finder. The application does not automatically approve claims.
 
 ## Architecture
 
@@ -169,8 +153,8 @@ The repository includes npm package manifests and lockfiles, but does not includ
 │       ├── pages/              # App screens
 │       └── services/           # Client-side service helpers
 ├── server/
-│   ├── scripts/                # Administrator seed and auction smoke test
-│   ├── services/               # Auction, AI matching, jobs, and local mail
+│   ├── scripts/                # Administrator seed
+│   ├── services/               # AI matching, jobs, and local mail
 │   ├── src/
 │   │   ├── controllers/        # Request handlers
 │   │   ├── middlewares/        # Authentication and role checks
@@ -258,6 +242,37 @@ npm run db:push
 cd ..
 ```
 
+### Inspect tables and apply the auction removal
+
+The PostgreSQL table definitions used by the app are in `server/src/models/`. The configured database connection is in `server/.env` under `DATABASE_URL`.
+
+To browse the configured database visually, run this from the project root:
+
+```powershell
+cd server
+npm run db:studio
+```
+
+To list the actual tables in the connected database, run this in pgAdmin's Query Tool or `psql`:
+
+```sql
+SELECT table_schema, table_name
+FROM information_schema.tables
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+ORDER BY table_name;
+```
+
+To inspect a table's columns, replace `found_items` with its name:
+
+```sql
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'found_items'
+ORDER BY ordinal_position;
+```
+
+For an existing database, back it up and run `server/migrations/2026-10-30-remove-auction.sql` once in pgAdmin's Query Tool or with `psql` connected to the same database in `DATABASE_URL`. Then run `npm run db:push` from the `server` folder to sync the remaining schema. Fresh databases only need the normal `npm run db:setup` step.
+
 ### 6. Start the app
 
 From the project root, run:
@@ -334,20 +349,8 @@ These routes require a signed-in account with the `USER` role. Users can only ma
 | `POST` | `/api/user/claims/:id` | Submit your answers and ownership claim. |
 | `GET` | `/api/user/claims`, `/api/user/claims/:id` | List your claims or view one claim. |
 | `DELETE` | `/api/user/claims/:id` | Withdraw one of your claims. |
-| `POST` | `/api/user/auctions/:id/bids` | Place a binding whole-EGP bid. |
-| `GET` | `/api/user/bids` | Review your bids and auction outcomes. |
-| `POST` | `/api/user/found-items/:id/auction/withdraw` | Opt out after notice and before an auction starts. |
 | `GET` | `/api/user/notifications`, `/api/user/notifications/unread-count` | Read your notifications and unread count. |
 | `POST` | `/api/user/notifications/read` | Mark one or more of your notifications as read. |
-
-### Public auctions
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/items/auctions` | Browse open auctions and safe found-item details. |
-| `GET` | `/api/items/auctions/:id` | View an auction and anonymous bid history. A signed-in bidder also sees their own state. |
-
-Public bid history uses aliases such as `Bidder 1`; it never returns bidder contact details or private found-item details.
 
 ### Claim conversations
 
@@ -372,22 +375,6 @@ These endpoints require a signed-in account with the `ADMIN` role. The backend a
 | `GET` | `/api/admin/users` | List registered regular user accounts. |
 | `PATCH` | `/api/admin/users/:userId/activate` | Restore a user's account access. |
 | `PATCH` | `/api/admin/users/:userId/deactivate` | Disable a user's account access. |
-| `GET`, `PUT` | `/api/admin/auction-settings` | Read or update rules for new auctions. |
-| `GET` | `/api/admin/auctions?status=` | Filter auctions by status. |
-| `GET` | `/api/admin/auctions/:id` | Review the full bid list and bidder details. |
-| `PATCH` | `/api/admin/auctions/:id/reserve` | Set or clear the reserve price on an open auction. |
-| `POST` | `/api/admin/auctions/:id/cancel` | Cancel an active auction with a required reason. |
-| `PATCH` | `/api/admin/users/:userId/strikes` | Add/remove a strike or lift a bidding ban. |
-
-### Auction smoke test
-
-After configuring a development database and applying the schema, run:
-
-```bash
-npm run smoke:auction
-```
-
-The script creates temporary users and found items, uses tiny auction settings, prints a result for each end-to-end check, and removes its test records. It restores the existing auction settings when it finishes.
 
 ### Image uploads
 

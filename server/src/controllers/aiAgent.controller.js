@@ -227,7 +227,7 @@ export const chatWithAiAgent = async (req, res) => {
         finder_id: foundItemsTable.finder_id,
         status: foundItemsTable.status,
       }).from(foundItemsTable)
-        .where(inArray(foundItemsTable.status, ["FOUND", "IN_AUCTION"]))
+        .where(eq(foundItemsTable.status, "FOUND"))
         .orderBy(desc(foundItemsTable.created_at))
         .limit(100),
       db.select({ role: aiAssistantMessagesTable.role, content: aiAssistantMessagesTable.content })
@@ -299,7 +299,7 @@ export const chatWithAiAgent = async (req, res) => {
       .map((match) => {
         const report = reportsById.get(String(match.report_id));
         const item = foundById.get(String(match.found_item_id));
-        if (!report || !item || !["FOUND", "IN_AUCTION"].includes(item.status)) return null;
+        if (!report || !item || item.status !== "FOUND") return null;
         return {
           report_number: `ATH-${String(report.id).slice(0, 8).toUpperCase()}`,
           found_item_id: item.id,
@@ -330,7 +330,7 @@ export const chatWithAiAgent = async (req, res) => {
       const candidatePairs = [];
       for (const report of reportsToSearch) {
         for (const item of foundItems) {
-          if (!["FOUND", "IN_AUCTION"].includes(item.status) || String(item.finder_id) === String(userId)) continue;
+          if (item.status !== "FOUND" || String(item.finder_id) === String(userId)) continue;
           const pairKey = `${report.id}:${item.id}`;
           if (alreadyScored.has(pairKey)) continue;
           const detailText = tokenSimilarity(report.report_details, item.public_details);

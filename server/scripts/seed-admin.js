@@ -2,14 +2,12 @@ import "dotenv/config";
 import { db, usersTable } from "../src/index.js";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import { getSettings } from "../services/auctionService.js";
 
 const seedAdmin = async () => {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
 
   try {
-    await getSettings();
     // Check if admin already exists
     const [existingUser] = await db
       .select()

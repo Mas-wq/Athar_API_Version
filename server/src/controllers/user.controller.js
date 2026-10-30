@@ -316,7 +316,7 @@ export const createClaimQuestionSession = async (req, res) => {
 
     const [item] = await db.select().from(foundItemsTable).where(eq(foundItemsTable.id, foundItemId)).limit(1);
     if (!item) return res.status(404).json({ message: "Item not found" });
-    if (!["FOUND", "IN_AUCTION"].includes(item.status)) return res.status(409).json({ message: "This item is no longer available to claim" });
+    if (item.status !== "FOUND") return res.status(409).json({ message: "This item is no longer available to claim" });
     const [report] = await db.select().from(lostReportsTable).where(and(
       eq(lostReportsTable.id, lost_report_id),
       eq(lostReportsTable.user_id, user_id),
@@ -378,7 +378,7 @@ export const myClaimSubmit = async (req, res) => {
 
     const [item] = await db.select().from(foundItemsTable).where(eq(foundItemsTable.id, claimedItemId)).limit(1);
     if (!item) return res.status(404).json({ message: "Item not found" });
-    if (!["FOUND", "IN_AUCTION"].includes(item.status)) return res.status(409).json({ message: "This item is no longer available to claim" });
+    if (item.status !== "FOUND") return res.status(409).json({ message: "This item is no longer available to claim" });
     if (!lost_report_id) return res.status(400).json({ message: "Choose the lost report this claim belongs to" });
     const [report] = await db.select().from(lostReportsTable).where(and(
       eq(lostReportsTable.id, lost_report_id),
@@ -430,7 +430,7 @@ export const myClaimSubmit = async (req, res) => {
     const submission = await db.transaction(async (tx) => {
       const [lockedItem] = await tx.select().from(foundItemsTable)
         .where(eq(foundItemsTable.id, item.id)).for("update");
-      if (!lockedItem || !["FOUND", "IN_AUCTION"].includes(lockedItem.status)) {
+      if (!lockedItem || lockedItem.status !== "FOUND") {
         throw Object.assign(new Error("This item is no longer available to claim"), { statusCode: 409 });
       }
       const [lockedSession] = await tx.select().from(claimQuestionSessionsTable)
@@ -482,9 +482,6 @@ export const myClaimSubmit = async (req, res) => {
         match_percentage: questionScore,
         status: "PENDING",
       }).returning();
-
-      await tx.update(foundItemsTable).set({ auction_notice_at: null, updated_at: new Date() })
-        .where(eq(foundItemsTable.id, item.id));
 
       await tx.update(claimQuestionSessionsTable).set({ used_at: new Date() })
         .where(eq(claimQuestionSessionsTable.id, lockedSession.id));

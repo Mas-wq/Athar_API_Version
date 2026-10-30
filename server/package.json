@@ -8,8 +8,7 @@
     "db:push": "npx drizzle-kit push",
     "db:studio": "npx drizzle-kit studio",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "seed": "node scripts/seed-admin.js",
-    "smoke:auction": "node scripts/auction-smoke-test.js"
+    "seed": "node scripts/seed-admin.js"
   },
   "keywords": [],
   "author": "",

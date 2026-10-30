@@ -9,9 +9,7 @@ import {
   lostReportsTable,
   usersTable,
   handoverRequestsTable,
-  auctionsTable,
 } from "../models/index.js";
-import { cancelAuctionForOwnerClaim } from "../../services/auctionService.js";
 
 const isParticipant = (conversation, userId) =>
   conversation.claimant_id === userId || conversation.finder_id === userId;
@@ -36,7 +34,6 @@ const publicDetailsForHandover = (value) => {
 };
 
 const makeHandoverQrPayload = (handover, context) => {
-  const conversation = context.conversation || context;
   const payload = {
     format: "ATHAR-HANDOVER-V1",
     temporary_code: handover.handover_code,
@@ -52,23 +49,17 @@ const makeHandoverQrPayload = (handover, context) => {
       expires_at: handover.expires_at,
     },
   };
-  if (conversation.kind === "AUCTION") {
-    return JSON.stringify({
-      ...payload,
-      kind: "AUCTION",
-      auction_number: `AUC-${String(conversation.auction_id || context.auction?.id).slice(0, 8).toUpperCase()}`,
-      final_price: context.auction?.final_price ?? context.auction?.current_price ?? null,
-    });
-  }
   return JSON.stringify({
     ...payload,
-    report_number: `ATH-${String(context.lost_report.id).slice(0, 8).toUpperCase()}`,
-    lost_report: {
+    report_number: context.lost_report?.id
+      ? `ATH-${String(context.lost_report.id).slice(0, 8).toUpperCase()}`
+      : null,
+    lost_report: context.lost_report ? {
       item_type: context.lost_report.item_type,
       date_lost: context.lost_report.date_lost,
       location: context.lost_report.location_lost,
       details: publicDetailsForHandover(context.lost_report.report_details),
-    },
+    } : null,
   });
 };
 
@@ -114,9 +105,7 @@ export const listConversations = async (req, res) => {
         item_type: row.item_type,
         item_location: row.item_location,
         item_image: Array.isArray(row.item_images) ? row.item_images[0] : null,
-        report_number: row.conversation.kind === "AUCTION"
-          ? `AUC-${String(row.conversation.auction_id).slice(0, 8).toUpperCase()}`
-          : row.report_number ? `ATH-${String(row.report_number).slice(0, 8).toUpperCase()}` : null,
+        report_number: row.report_number ? `ATH-${String(row.report_number).slice(0, 8).toUpperCase()}` : null,
         counterpart_name: counterpart?.full_name || "Athar member",
         last_message: lastMessage?.message || "No messages yet",
         last_message_at: lastMessage?.created_at || row.conversation.created_at,
@@ -219,13 +208,6 @@ export const getConversation = async (req, res) => {
       .select({
         conversation: conversationsTable,
         lost_report: lostReportsTable,
-        auction: {
-          id: auctionsTable.id,
-          final_price: auctionsTable.final_price,
-          current_price: auctionsTable.current_price,
-          status: auctionsTable.status,
-          pickup_deadline: auctionsTable.pickup_deadline,
-        },
         found_item: {
           id: foundItemsTable.id,
           item_type: foundItemsTable.item_type,
@@ -238,7 +220,6 @@ export const getConversation = async (req, res) => {
       .from(conversationsTable)
       .leftJoin(lostReportsTable, eq(conversationsTable.lost_report_id, lostReportsTable.id))
       .innerJoin(foundItemsTable, eq(conversationsTable.found_item_id, foundItemsTable.id))
-      .leftJoin(auctionsTable, eq(conversationsTable.auction_id, auctionsTable.id))
       .where(eq(conversationsTable.id, req.params.conversationId));
     if (!conversation) return res.status(404).json({ message: "Chat not found" });
     if (!isParticipant(conversation.conversation, req.user.id)) {
@@ -281,11 +262,9 @@ export const getConversation = async (req, res) => {
       success: true,
       data: {
         ...conversation,
-        report_number: conversation.conversation.kind === "AUCTION"
-          ? `AUC-${String(conversation.conversation.auction_id).slice(0, 8).toUpperCase()}`
-          : conversation.lost_report
-            ? `ATH-${String(conversation.lost_report.id).slice(0, 8).toUpperCase()}`
-            : null,
+        report_number: conversation.lost_report?.id
+          ? `ATH-${String(conversation.lost_report.id).slice(0, 8).toUpperCase()}`
+          : null,
         messages: visibleMessages,
         claim: claim || null,
         handover: handover || null,
@@ -357,17 +336,14 @@ export const decideClaim = async (req, res) => {
       if (accept) {
         const [lockedFoundItem] = await tx.select().from(foundItemsTable)
           .where(eq(foundItemsTable.id, conversation.found_item_id)).for("update");
-        if (!lockedFoundItem || !["FOUND", "IN_AUCTION"].includes(lockedFoundItem.status)) {
+        if (!lockedFoundItem || lockedFoundItem.status !== "FOUND") {
           const error = new Error("This found item already has another accepted claim");
           error.statusCode = 409;
           throw error;
         }
-        if (lockedFoundItem.status === "IN_AUCTION") {
-          await cancelAuctionForOwnerClaim(tx, lockedFoundItem.id);
-        }
         const [reserved] = await tx.update(foundItemsTable)
-          .set({ status: "CLAIMED", auction_notice_at: null, updated_at: new Date() })
-          .where(and(eq(foundItemsTable.id, conversation.found_item_id), inArray(foundItemsTable.status, ["FOUND", "IN_AUCTION"])))
+          .set({ status: "CLAIMED", updated_at: new Date() })
+          .where(and(eq(foundItemsTable.id, conversation.found_item_id), eq(foundItemsTable.status, "FOUND")))
           .returning({ id: foundItemsTable.id });
         if (!reserved) throw Object.assign(new Error("This found item already has another accepted claim"), { statusCode: 409 });
         if (conversation.lost_report_id) {
@@ -429,29 +405,12 @@ export const completeHandoverIfDue = async (handoverId) => {
         !handover || handover.status !== "AWAITING_FINALIZATION" ||
         !handover.objection_until || new Date(handover.objection_until) > now) return;
 
-    let auction = null;
-    if (conversation.kind === "AUCTION") {
-      if (item.status !== "IN_AUCTION" || !conversation.auction_id) return;
-      [auction] = await tx.select().from(auctionsTable)
-        .where(eq(auctionsTable.id, conversation.auction_id)).for("update");
-      if (!auction || auction.status !== "AWAITING_PICKUP" || auction.winner_id !== conversation.claimant_id) return;
-    }
     const [completed] = await tx.update(handoverRequestsTable)
       .set({ status: "COMPLETED", updated_at: now })
       .where(and(eq(handoverRequestsTable.id, handover.id), eq(handoverRequestsTable.status, "AWAITING_FINALIZATION")))
       .returning({ id: handoverRequestsTable.id });
     if (!completed) return;
     finalized = true;
-    if (conversation.kind === "AUCTION") {
-      await tx.update(foundItemsTable).set({ status: "SOLD", updated_at: now })
-        .where(eq(foundItemsTable.id, conversation.found_item_id));
-      await tx.update(auctionsTable).set({ status: "SOLD", updated_at: now })
-        .where(eq(auctionsTable.id, conversation.auction_id));
-      await tx.update(conversationsTable).set({ status: "DELIVERED", updated_at: now })
-        .where(eq(conversationsTable.id, conversation.id));
-      await addSystemMessage(tx, conversation.id, "Item collected. Cash payment confirmed at pickup.");
-      return;
-    }
     const [claim] = await tx.select().from(claimsTable)
       .where(eq(claimsTable.conversation_id, conversation.id))
       .orderBy(desc(claimsTable.created_at)).limit(1);
@@ -523,17 +482,16 @@ export const createHandoverRequest = async (req, res) => {
       conversation: conversationsTable,
       lost_report: lostReportsTable,
       found_item: foundItemsTable,
-      auction: auctionsTable,
     })
       .from(conversationsTable)
       .leftJoin(lostReportsTable, eq(conversationsTable.lost_report_id, lostReportsTable.id))
       .innerJoin(foundItemsTable, eq(conversationsTable.found_item_id, foundItemsTable.id))
-      .leftJoin(auctionsTable, eq(conversationsTable.auction_id, auctionsTable.id))
       .where(eq(conversationsTable.id, conversation.id));
     handover.qr_payload = makeHandoverQrPayload(handover, handoverContext);
-    const handoverMessage = handoverContext.conversation.kind === "AUCTION"
-      ? `A handover plan was created for auction AUC-${String(handoverContext.conversation.auction_id).slice(0, 8).toUpperCase()} (${handoverContext.found_item.item_type}) for ${handoverContext.auction?.final_price ?? "the winning amount"} EGP. Meet at ${meetingPlace}. Pay cash at pickup. It expires in 24 hours. Both people must confirm separately after meeting.`
-      : "A handover plan was created for report ATH-" + String(handoverContext.lost_report.id).slice(0, 8).toUpperCase() + " (" + handoverContext.lost_report.item_type + "). Meet at " + meetingPlace + ". It expires in 24 hours. Both people must scan the QR and confirm separately after meeting.";
+    const reportNumber = handoverContext.lost_report?.id
+      ? `ATH-${String(handoverContext.lost_report.id).slice(0, 8).toUpperCase()}`
+      : "the found-item record";
+    const handoverMessage = `A handover plan was created for ${reportNumber}. Meet at ${meetingPlace}. It expires in 24 hours. Both people must scan the QR and confirm separately after meeting.`;
     await db.insert(conversationMessagesTable).values({
       conversation_id: conversation.id,
       sender_id: req.user.id,

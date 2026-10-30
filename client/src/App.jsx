@@ -29,10 +29,6 @@ import {
   ChatsPage,
   AdminDashboardPage,
   AiAssistantPage,
-  AuctionsPage,
-  AuctionDetailsPage,
-  MyBidsPage,
-  AdminAuctionsPage,
 } from "./pages/index.js";
 import Footer from "./components/Footer";
 import BrandSplash from "./components/BrandSplash";
@@ -104,9 +100,6 @@ const App = () => {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/found-items" element={<BrowseFoundItems />} />
             <Route path="/lost-reports" element={<BrowseLostReports />} />
-            <Route path="/auctions" element={<AuctionsPage />} />
-            <Route path="/auctions/:id" element={<AuctionDetailsPage />} />
-            <Route path="/my-bids" element={<MyBidsPage />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
 
             {/* User Routes */}
@@ -128,7 +121,6 @@ const App = () => {
             {/* Community found item posting and admin routes */}
             <Route path="/add-found-item" element={<AddFoundItem />} />
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/admin/auctions" element={<AdminAuctionsPage />} />
             <Route path="/manage-users" element={<ManageUsersPage />} />
           </Routes>
         </main>

@@ -23,7 +23,6 @@ import {
   Bot,
   Moon,
   Sun,
-  Gavel,
 } from "lucide-react";
 import AtharLogo from "./AtharLogo";
 import NotificationBell from "./NotificationBell";
@@ -95,8 +94,6 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
     ? [
         { to: "/", label: "Home", icon: Home },
         { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/auctions", label: "Auctions", icon: Gavel },
-        { to: "/admin/auctions", label: "Auction Admin", icon: Gavel },
         { to: "/found-items", label: "Found Items", icon: Search },
         { to: "/lost-reports", label: "Lost Reports", icon: AlertCircle },
         { to: "/manage-users", label: "Users", icon: User },
@@ -105,13 +102,11 @@ const Navbar = ({ onLoginClick = () => {}, onRegisterClick = () => {} }) => {
       ]
     : [
         { to: "/", label: "Home", icon: Home },
-        { to: "/auctions", label: "Auctions", icon: Gavel },
         { to: "/found-items", label: "Found Items", icon: Search },
         { to: "/lost-reports", label: "Lost Reports", icon: AlertCircle },
         { to: "/report-lost-item", label: "Report Lost", icon: AlertCircle },
         { to: "/add-found-item", label: "Add Found", icon: Package },
         ...(user ? [
-          ...(user.role === "USER" ? [{ to: "/my-bids", label: "My Bids", icon: Gavel }] : []),
           { to: "/chats", label: "Chats", icon: Mail },
           { to: "/ai-assistant", label: "Athar AI", icon: Bot },
         ] : []),
